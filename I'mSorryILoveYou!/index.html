@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YANDERE — Everyone has something to hide.</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/title.css" />
+</head>
+<body>
+
+  <!-- ============ TITLE SCREEN ============ -->
+  <section id="title-screen" class="screen">
+    <div id="title-sakura" class="title-sakura" aria-hidden="true"></div>
+
+    <h1 class="title-wordmark">YANDERE</h1>
+    <p class="title-subtitle">Everyone has something to hide.</p>
+
+    <nav class="title-menu">
+      <button id="btn-start" type="button">START</button>
+      <button id="btn-how-to-play" type="button">HOW TO PLAY</button>
+      <button id="btn-options" type="button">OPTIONS</button>
+      <button id="btn-quit" type="button">QUIT</button>
+    </nav>
+  </section>
+
+  <!-- ============ CHARACTER CREATION ============ -->
+  <section id="creation-screen" class="screen hidden">
+    <div class="creation-card">
+      <h2>Create Your Student</h2>
+
+      <div class="creation-field">
+        <label for="creation-name">Name</label>
+        <input id="creation-name" type="text" maxlength="18" placeholder="Enter a name" />
+      </div>
+
+      <div class="creation-field">
+        <label>Gender</label>
+        <div id="creation-gender-options" class="option-row"></div>
+      </div>
+
+      <div class="creation-field">
+        <label>Club</label>
+        <div id="creation-club-options" class="option-row"></div>
+      </div>
+
+      <p id="creation-error" class="creation-error"></p>
+
+      <button id="creation-continue" class="creation-continue" type="button" disabled>CONTINUE</button>
+    </div>
+  </section>
+
+  <!-- ============ OVERLAYS ============ -->
+  <div id="overlay-how-to-play" class="title-overlay hidden">
+    <div class="title-overlay-panel">
+      <h2>How to Play</h2>
+      <p>Move with <strong>WASD</strong> or the <strong>arrow keys</strong>. Walk up to a classmate and press <strong>E</strong> (or click them) to talk.</p>
+      <p>Each day moves through Morning, Announcements, a Free Period, Club Activity, Going Home, and Night. Use the button in the top-right of the school screen to move to the next part of the day.</p>
+      <p>Open the pause menu (top-right, or press <strong>Esc</strong>) to check your character, relationships, evidence, the map, and save your game.</p>
+      <p>Talk to people, pay attention to where they are and aren't, and start forming your own theory about who — and what — is really going on at this school.</p>
+      <button class="close-btn" type="button" data-close-overlay>Close</button>
+    </div>
+  </div>
+
+  <div id="overlay-options" class="title-overlay hidden">
+    <div class="title-overlay-panel">
+      <h2>Options</h2>
+      <p>Additional options are reserved for a future update.</p>
+      <button class="close-btn" type="button" data-close-overlay>Close</button>
+    </div>
+  </div>
+
+  <div id="overlay-quit" class="title-overlay hidden">
+    <div class="title-overlay-panel">
+      <h2>Quit</h2>
+      <p>There is nowhere to go.</p>
+      <button id="overlay-quit-confirm" class="close-btn" type="button" data-close-overlay>...Fine.</button>
+    </div>
+  </div>
+
+  <script src="js/save.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
