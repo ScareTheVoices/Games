@@ -1,0 +1,22 @@
+{
+  "World": {
+    "activeFilters": [
+      "outline",
+      "bloom"
+    ],
+    "outlineThickness": 1,
+    "outlineQuality": 1,
+    "outlineColor": "#000000",
+    "outlineAlpha": 1,
+    "outlineTargetEvents": true,
+    "outlineTargetPlayer": true,
+    "outlineExcludeNames": "",
+    "bloomThreshold": 0.4,
+    "bloomScale": 1.68,
+    "bloomBrightness": 0.83,
+    "bloomBlur": 14,
+    "bloomQuality": 7,
+    "bloomAlpha": 0.31
+  },
+  "__global__": "World"
+}
