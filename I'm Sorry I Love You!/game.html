@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YANDERE — School</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/game.css" />
+  <link rel="stylesheet" href="css/dialogue.css" />
+  <link rel="stylesheet" href="css/menus.css" />
+</head>
+<body>
+
+  <section id="game-screen" class="screen">
+
+    <!-- ===== HUD ===== -->
+    <header id="hud">
+      <div class="hud-left">
+        <span id="hud-phase" class="hud-phase">Morning</span>
+        <span id="hud-day" class="hud-day">Day 1</span>
+      </div>
+      <div class="hud-right" style="display:flex; gap:0.6rem; align-items:center;">
+        <button id="hud-next-phase-btn" class="hud-menu-btn hidden" type="button">Continue →</button>
+        <button id="hud-menu-btn" class="hud-menu-btn" type="button">Menu</button>
+      </div>
+    </header>
+
+    <!-- ===== MAP ===== -->
+    <div id="map-viewport">
+      <div id="map-world"></div>
+      <div id="interact-prompt" class="interact-prompt hidden"></div>
+      <div id="club-lock-banner" class="hidden">You can't leave club activity yet.</div>
+      <p id="move-hint">WASD / Arrow keys to move · E to talk</p>
+    </div>
+
+    <!-- ===== DIALOGUE BOX ===== -->
+    <div id="dialogue-box" class="hidden">
+      <div class="dialogue-relationship-toast" id="dialogue-relationship-toast"></div>
+      <div class="dialogue-speaker">
+        <div class="dialogue-portrait" id="dialogue-portrait"></div>
+        <div class="dialogue-speaker-name" id="dialogue-speaker-name"></div>
+      </div>
+      <div class="dialogue-text" id="dialogue-text"></div>
+      <div class="dialogue-choices" id="dialogue-choices"></div>
+    </div>
+
+    <!-- ===== PHASE CURTAIN ===== -->
+    <div id="phase-curtain" class="hidden">
+      <h2 id="phase-curtain-title">Morning</h2>
+      <p id="phase-curtain-sub"></p>
+    </div>
+
+    <!-- ===== ANNOUNCEMENTS ===== -->
+    <div id="announcement-panel" class="hidden">
+      <h2>School Announcements</h2>
+      <p id="announcement-text"></p>
+      <button id="announcement-continue" type="button">Continue</button>
+    </div>
+
+    <!-- ===== GOING HOME ===== -->
+    <div id="going-home-panel" class="hidden">
+      <h2>Who will you walk home with?</h2>
+      <div id="going-home-list" class="going-home-list"></div>
+    </div>
+
+    <!-- ===== PAUSE MENU ===== -->
+    <div id="pause-menu" class="hidden">
+      <button id="menu-close-btn" class="menu-close-btn" type="button">✕</button>
+      <div class="menu-panel">
+        <nav class="menu-tabs">
+          <button class="menu-tab active" data-tab="character" type="button">Character</button>
+          <button class="menu-tab" data-tab="relationships" type="button">Relationships</button>
+          <button class="menu-tab" data-tab="evidence" type="button">Evidence</button>
+          <button class="menu-tab" data-tab="map" type="button">Map</button>
+          <button class="menu-tab" data-tab="save" type="button">Save</button>
+          <button class="menu-tab" data-tab="settings" type="button">Settings</button>
+        </nav>
+        <div id="menu-body" class="menu-body"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <script src="js/save.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/relationships.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/schedule.js"></script>
+  <script src="js/dialogue.js"></script>
+  <script src="js/investigation.js"></script>
+  <script src="js/yandere.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/phases.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
