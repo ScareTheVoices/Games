@@ -1,0 +1,92 @@
+/* ============================================================
+   MAIN.CSS — shared tokens, reset, base typography
+   Design language: a school that looks ordinary at first glance —
+   sage-wall daylight, navy uniform ink — with a single muted
+   crimson reserved strictly for tension (suspicion, evidence,
+   danger). Nothing else may use that color.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+:root {
+  /* --- color: daylight school --- */
+  --wall-sage:      #e7ede2;
+  --wall-sage-dim:  #d9e1d2;
+  --ink-navy:       #263148;
+  --ink-navy-soft:  #4a5568;
+  --paper:          #f8f7f2;
+  --sakura:         #d97fa0;
+  --sakura-soft:    #f0c6d6;
+  --gold-chalk:     #c9a54a;
+
+  /* --- color: dusk / title --- */
+  --dusk-deep:      #1b1f2e;
+  --dusk-mid:       #2b3350;
+  --dusk-glow:      #e9c9d9;
+
+  /* --- the one reserved tension color --- */
+  --tension-red:    #8b1e3f;
+  --tension-red-dim:#5c1329;
+
+  /* --- type --- */
+  --font-display: 'Shippori Mincho', serif;
+  --font-ui: 'Zen Kaku Gothic New', sans-serif;
+
+  /* --- layout --- */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --border-hair: 1px solid rgba(38, 49, 72, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--ink-navy);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:focus-visible,
+[tabindex]:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--sakura);
+  outline-offset: 2px;
+}
+
+ul {
+  list-style: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
