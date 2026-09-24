@@ -1,0 +1,110 @@
+/* ============================================================
+   MAIN.CSS — shared tokens, reset, base typography
+   Design language: a school that looks ordinary at first glance —
+   sage-wall daylight, navy uniform ink — with a single muted
+   crimson reserved strictly for tension (suspicion, evidence,
+   danger). Nothing else may use that color.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+:root {
+  /* --- 2.5D school palette --- */
+  --wall-sage:      #e5eadf;
+  --wall-sage-dim:  #d2dcc4;
+  --wall-sage-deep: #c3cfb8;
+  --ink-navy:       #23314a;
+  --ink-navy-soft:  #49607a;
+  --paper:          #f7f3ec;
+  --paper-ink:      #efe8de;
+  --sakura:         #d57e9d;
+  --sakura-soft:    #f3d2df;
+  --gold-chalk:     #d8b55c;
+  --floor-shadow:   #b6c2ae;
+
+  /* --- dusk / title --- */
+  --dusk-deep:      #1a1d2e;
+  --dusk-mid:       #2b3350;
+  --dusk-glow:      #f2d4df;
+  --dusk-glow-soft: rgba(242, 212, 223, 0.7);
+
+  /* --- the one reserved tension color --- */
+  --tension-red:    #8c1d3d;
+  --tension-red-dim:#561728;
+
+  /* --- type --- */
+  --font-display: 'Shippori Mincho', serif;
+  --font-ui: 'Zen Kaku Gothic New', sans-serif;
+
+  /* --- layout --- */
+  --radius-sm: 4px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --border-hair: 1px solid rgba(35, 49, 74, 0.14);
+  --panel-shadow: 0 16px 36px rgba(24, 31, 46, 0.16);
+  --depth-shadow: 0 8px 0 rgba(24, 31, 46, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--ink-navy);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.9), rgba(241,235,226,0.7) 30%, rgba(219,226,209,0.9) 100%),
+    linear-gradient(180deg, #f6f1ea 0%, #dde5d4 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:focus-visible,
+[tabindex]:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--sakura);
+  outline-offset: 2px;
+}
+
+ul {
+  list-style: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
