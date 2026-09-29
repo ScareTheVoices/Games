@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yu-Gi-Oh! Cardle</title>
+  <style>
+    :root {
+      --bg: #0d0b1a;
+      --panel: #1a1625;
+      --border: #3d2b5a;
+      --gold: #e8c547;
+      --gold-dim: #a88b2a;
+      --purple: #7b5ea7;
+      --text: #f0e6ff;
+      --muted: #9a8bb5;
+      --green: #2ecc71;
+      --yellow: #f1c40f;
+      --red: #e74c3c;
+      --blue: #3498db;
+      --orange: #e67e22;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, #2a1a4a 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, #1a0a3a 0%, transparent 50%);
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+    h1 {
+      font-size: 1.85rem;
+      background: linear-gradient(135deg, var(--gold), #fff3a0, var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      min-width: 90px;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .panel-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold-dim);
+      margin-bottom: 0.75rem;
+    }
+    /* Hints */
+    .hints-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.6rem;
+    }
+    .hint-card {
+      background: #12101c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .hint-card.revealed {
+      border-color: var(--gold);
+      background: #1f1a0f;
+    }
+    .hint-card.available:hover {
+      border-color: var(--purple);
+      cursor: pointer;
+      transform: translateY(-2px);
+    }
+    .hint-card.disabled { opacity: 0.4; pointer-events: none; }
+    .hint-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .hint-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-top: 0.25rem;
+      min-height: 1.4em;
+    }
+    .hint-value.hidden { color: var(--muted); font-style: italic; font-weight: 400; }
+    /* Possible count */
+    .possible {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .possible strong { color: var(--gold); }
+    /* Guess input */
+    .guess-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      position: relative;
+    }
+    #guessInput {
+      flex: 1;
+      background: #12101c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+    #guessInput:focus { border-color: var(--purple); }
+    #guessInput:disabled { opacity: 0.5; }
+    button {
+      background: linear-gradient(135deg, #5a3d8a, #3d2b5a);
+      border: 1px solid var(--purple);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(135deg, #6b4c9e, #4d3b6a);
+      transform: translateY(-1px);
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary {
+      background: linear-gradient(135deg, #c9a227, #8a6b1a);
+      border-color: var(--gold);
+      color: #1a1200;
+    }
+    button.primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #e8c547, #a88b2a);
+    }
+    .autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 90px;
+      background: #12101c;
+      border: 1px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      display: none;
+    }
+    .autocomplete.show { display: block; }
+    .ac-item {
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid #1f1a2e;
+      font-size: 0.9rem;
+    }
+    .ac-item:hover, .ac-item.active { background: #2a1f40; }
+    /* Guesses history */
+    .guesses { display: flex; flex-direction: column; gap: 0.6rem; }
+    .guess-row-card {
+      background: #12101c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    .guess-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .guess-name.correct { color: var(--green); }
+    .props {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+    }
+    @media (min-width: 500px) {
+      .props { grid-template-columns: repeat(6, 1fr); }
+    }
+    .prop {
+      text-align: center;
+      padding: 0.35rem 0.2rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      background: #1a1625;
+      border: 1px solid transparent;
+    }
+    .prop .plabel { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; }
+    .prop.match { background: #0d3d24; border-color: var(--green); color: var(--green); }
+    .prop.close { background: #3d3200; border-color: var(--yellow); color: var(--yellow); }
+    .prop.miss { background: #2a1520; border-color: #5a2a35; color: #c07080; }
+    .prop .arrow { font-size: 0.7rem; opacity: 0.8; }
+    /* Messages */
+    .message {
+      text-align: center;
+      padding: 1rem;
+      border-radius: 10px;
+      margin: 1rem 0;
+      font-weight: 600;
+    }
+    .message.win {
+      background: linear-gradient(135deg, #0d3d24, #1a5c38);
+      border: 1px solid var(--green);
+      color: #a8f0c0;
+    }
+    .message.lose {
+      background: linear-gradient(135deg, #3d1520, #5a2030);
+      border: 1px solid var(--red);
+      color: #f0a0b0;
+    }
+    .message.info {
+      background: #1a1625;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .card-reveal {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .card-reveal img {
+      max-width: 200px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      border: 2px solid var(--gold);
+    }
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+    footer a { color: var(--purple); }
+    .howto {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .howto ul { margin: 0.5rem 0 0 1.2rem; }
+    .howto li { margin-bottom: 0.3rem; }
+    .legend {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      margin-top: 0.75rem;
+      color: var(--muted);
+    }
+    .legend span { display: flex; align-items: center; gap: 0.3rem; }
+    .dot {
+      width: 12px; height: 12px; border-radius: 3px;
+      display: inline-block;
+    }
+    .dot.g { background: var(--green); }
+    .dot.y { background: var(--yellow); }
+    .dot.r { background: #c07080; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✦ Cardle ✦</h1>
+      <p class="subtitle">Guess the Yu-Gi-Oh! monster · Wordle-style</p>
+    </header>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Summoning card database…</p>
+    </div>
+
+    <div id="game" style="display:none">
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-label">Guesses</div>
+          <div class="stat-value" id="guessesLeft">6</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Hints</div>
+          <div class="stat-value" id="hintsLeft">5</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Possible</div>
+          <div class="stat-value" id="possibleCount">—</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Hints — click an unrevealed one to spend a hint</div>
+        <div class="hints-grid" id="hintsGrid"></div>
+        <div class="legend">
+          <span><span class="dot g"></span> Exact match</span>
+          <span><span class="dot y"></span> Close (numbers)</span>
+          <span><span class="dot r"></span> No match</span>
+        </div>
+      </div>
+
+      <div class="panel" id="inputPanel">
+        <div class="panel-title">Guess a card</div>
+        <div class="guess-row">
+          <input type="text" id="guessInput" placeholder="Type a monster name…" autocomplete="off" />
+          <button class="primary" id="guessBtn">Guess</button>
+          <div class="autocomplete" id="autocomplete"></div>
+        </div>
+        <div class="actions">
+          <button id="hintBtn">Use Random Hint</button>
+          <button id="newGameBtn">New Game</button>
+        </div>
+      </div>
+
+      <div id="messageArea"></div>
+
+      <div class="panel">
+        <div class="panel-title">Your guesses</div>
+        <div class="guesses" id="guessesList">
+          <p class="message info" style="margin:0">No guesses yet. Use the free hint above or take a shot!</p>
+        </div>
+      </div>
+
+      <div class="panel howto">
+        <div class="panel-title">How to play</div>
+        <ul>
+          <li>One free hint is revealed at the start. You have <strong>5 hints total</strong> and <strong>6 guesses</strong>.</li>
+          <li>Click any unrevealed hint (or “Use Random Hint”) to spend a hint and narrow the possible cards.</li>
+          <li>Guess by card name. Each guess compares Frame, Level/Rank/Link, Attribute, Type, ATK & DEF.</li>
+          <li>Green = exact match · Yellow = close on numbers (within 500 ATK/DEF or ±1 Level) · Red = miss.</li>
+          <li>Only monster cards are in the pool.</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      Card data via <a href="https://ygoprodeck.com/" target="_blank" rel="noopener">YGOPRODeck API</a>.
+      Not affiliated with Konami or Yu-Gi-Oh!.
+    </footer>
+  </div>
+
+  <script>
+    // ─── Config ───────────────────────────────────────────────
+    const MAX_GUESSES = 6;
+    const MAX_HINTS = 5; // includes the free starting hint
+    const API = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
+    const MONSTER_TYPES = [
+      'Normal Monster', 'Effect Monster', 'Ritual Monster',
+      'Fusion Monster', 'Synchro Monster', 'XYZ Monster', 'Link Monster',
+      'Pendulum Normal Monster', 'Pendulum Effect Monster',
+      'Synchro Pendulum Effect Monster', 'XYZ Pendulum Effect Monster',
+      'Fusion Pendulum Effect Monster', 'Ritual Pendulum Effect Monster',
+      'Link Pendulum Effect Monster'
+    ].join(',');
+
+    // Frame categories the player sees
+    const FRAME_MAP = {
+      normal: 'Normal',
+      effect: 'Effect',
+      ritual: 'Ritual',
+      fusion: 'Fusion',
+      synchro: 'Synchro',
+      xyz: 'XYZ',
+      link: 'Link',
+      // pendulums collapse into their base
+      'normal_pendulum': 'Normal',
+      'effect_pendulum': 'Effect',
+      'ritual_pendulum': 'Ritual',
+      'fusion_pendulum': 'Fusion',
+      'synchro_pendulum': 'Synchro',
+      'xyz_pendulum': 'XYZ',
+      'link_pendulum': 'Link'
+    };
+
+    const HINT_KEYS = ['frame', 'level', 'attribute', 'race', 'atk', 'def'];
+    const HINT_LABELS = {
+      frame: 'Frame',
+      level: 'Level / Rank / Link',
+      attribute: 'Attribute',
+      race: 'Type',
+      atk: 'ATK',
+      def: 'DEF'
+    };
+
+    // ─── State ────────────────────────────────────────────────
+    let allCards = [];       // full monster pool
+    let possible = [];       // filtered by revealed hints
+    let target = null;
+    let revealed = {};       // { frame: 'Effect', atk: 2500, ... }
+    let hintsUsed = 0;
+    let guessesLeft = MAX_GUESSES;
+    let gameOver = false;
+    let guessHistory = [];
+
+    // ─── Helpers ──────────────────────────────────────────────
+    function normalizeFrame(c) {
+      const ft = (c.frameType || '').toLowerCase();
+      if (FRAME_MAP[ft]) return FRAME_MAP[ft];
+      // fallback from type string
+      const t = (c.type || '').toLowerCase();
+      if (t.includes('link')) return 'Link';
+      if (t.includes('xyz')) return 'XYZ';
+      if (t.includes('synchro')) return 'Synchro';
+      if (t.includes('fusion')) return 'Fusion';
+      if (t.includes('ritual')) return 'Ritual';
+      if (t.includes('effect') || t.includes('pendulum')) return 'Effect';
+      return 'Normal';
+    }
+
+    function getLevel(c) {
+      if (c.linkval != null) return c.linkval;
+      if (c.level != null) return c.level;
+      return null;
+    }
+
+    function cardProps(c) {
+      return {
+        name: c.name,
+        frame: normalizeFrame(c),
+        level: getLevel(c),
+        attribute: c.attribute || '—',
+        race: c.race || '—',
+        atk: c.atk != null ? c.atk : null,
+        def: c.def != null ? c.def : null,
+        id: c.id,
+        image: c.card_images?.[0]?.image_url_small || null
+      };
+    }
+
+    function formatVal(key, val) {
+      if (val === null || val === undefined) return '—';
+      if (key === 'atk' || key === 'def') return val === '?' ? '?' : String(val);
+      return String(val);
+    }
+
+    // ─── Load cards ───────────────────────────────────────────
+    async function loadCards() {
+      // Fetch several pages of TCG monsters to get a solid pool (~1500+)
+      const pages = [];
+      const pageSize = 500;
+      // Parallel fetches for speed
+      const offsets = [0, 500, 1000, 1500];
+      const fetches = offsets.map(off =>
+        fetch(`${API}?format=tcg&type=${encodeURIComponent(MONSTER_TYPES)}&num=${pageSize}&offset=${off}`)
+          .then(r => r.json())
+          .then(d => d.data || [])
+          .catch(() => [])
+      );
+      const results = await Promise.all(fetches);
+      const seen = new Set();
+      const pool = [];
+      for (const arr of results) {
+        for (const c of arr) {
+          if (!seen.has(c.id) && c.name) {
+            // Prefer cards that have at least ATK or level
+            if (c.atk != null || c.level != null || c.linkval != null) {
+              seen.add(c.id);
+              pool.push(c);
+            }
+          }
+        }
+      }
+      // If still sparse, one more broad fetch
+      if (pool.length < 400) {
+        try {
+          const extra = await fetch(`${API}?format=tcg&type=Effect%20Monster&num=500&offset=0`).then(r => r.json());
+          for (const c of (extra.data || [])) {
+            if (!seen.has(c.id)) { seen.add(c.id); pool.push(c); }
+          }
+        } catch (_) {}
+      }
+      return pool;
+    }
+
+    // ─── Game logic ───────────────────────────────────────────
+    function filterPossible() {
+      possible = allCards.filter(c => {
+        const p = cardProps(c);
+        for (const [k, v] of Object.entries(revealed)) {
+          if (p[k] !== v) return false;
+        }
+        return true;
+      });
+      document.getElementById('possibleCount').textContent = possible.length;
+    }
+
+    function pickTarget() {
+      // Prefer cards that are somewhat common (have images, non-zero stats)
+      const candidates = allCards.filter(c =>
+        c.card_images?.length &&
+        (c.atk > 0 || c.linkval) &&
+        c.name.length < 40
+      );
+      const pool = candidates.length > 50 ? candidates : allCards;
+      target = pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function startGame() {
+      revealed = {};
+      hintsUsed = 0;
+      guessesLeft = MAX_GUESSES;
+      gameOver = false;
+      guessHistory = [];
+      pickTarget();
+      // Free hint
+      const freeKey = HINT_KEYS[Math.floor(Math.random() * HINT_KEYS.length)];
+      const tp = cardProps(target);
+      revealed[freeKey] = tp[freeKey];
+      hintsUsed = 1;
+      filterPossible();
+      updateUI();
+      document.getElementById('guessesList').innerHTML =
+        '<p class="message info" style="margin:0">Free hint revealed! Narrow the list or make a guess.</p>';
+      document.getElementById('messageArea').innerHTML = '';
+      document.getElementById('guessInput').disabled = false;
+      document.getElementById('guessBtn').disabled = false;
+      document.getElementById('hintBtn').disabled = false;
+    }
+
+    function updateUI() {
+      document.getElementById('guessesLeft').textContent = guessesLeft;
+      document.getElementById('hintsLeft').textContent = MAX_HINTS - hintsUsed;
+      renderHints();
+      filterPossible();
+    }
+
+    function renderHints() {
+      const grid = document.getElementById('hintsGrid');
+      const canHint = !gameOver && hintsUsed < MAX_HINTS;
+      grid.innerHTML = HINT_KEYS.map(key => {
+        const isRevealed = key in revealed;
+        const classes = ['hint-card'];
+        if (isRevealed) classes.push('revealed');
+        else if (canHint) classes.push('available');
+        else classes.push('disabled');
+        const val = isRevealed
+          ? formatVal(key, revealed[key])
+          : '???';
+        return `
+          <div class="${classes.join(' ')}" data-key="${key}" ${!isRevealed && canHint ? `onclick="useHint('${key}')"` : ''}>
+            <div class="hint-label">${HINT_LABELS[key]}</div>
+            <div class="hint-value ${isRevealed ? '' : 'hidden'}">${val}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function useHint(key) {
+      if (gameOver || hintsUsed >= MAX_HINTS || key in revealed) return;
+      const tp = cardProps(target);
+      revealed[key] = tp[key];
+      hintsUsed++;
+      filterPossible();
+      updateUI();
+      // If only one possible left, nudge the player
+      if (possible.length === 1 && !gameOver) {
+        showMessage('info', `Only one card matches the hints: <strong>${possible[0].name}</strong>`);
+      }
+    }
+
+    function useRandomHint() {
+      const remaining = HINT_KEYS.filter(k => !(k in revealed));
+      if (!remaining.length || hintsUsed >= MAX_HINTS || gameOver) return;
+      useHint(remaining[Math.floor(Math.random() * remaining.length)]);
+    }
+
+    function compareProp(key, guessVal, targetVal) {
+      if (guessVal === targetVal) return 'match';
+      // Numeric closeness
+      if (['atk', 'def', 'level'].includes(key) &&
+          typeof guessVal === 'number' && typeof targetVal === 'number') {
+        if (key === 'level' && Math.abs(guessVal - targetVal) <= 1) return 'close';
+        if ((key === 'atk' || key === 'def') && Math.abs(guessVal - targetVal) <= 500) return 'close';
+      }
+      return 'miss';
+    }
+
+    function direction(key, g, t) {
+      if (typeof g !== 'number' || typeof t !== 'number') return '';
+      if (g < t) return ' ↑';
+      if (g > t) return ' ↓';
+      return '';
+    }
+
+    function submitGuess(name) {
+      if (gameOver || guessesLeft <= 0) return;
+      const card = allCards.find(c => c.name.toLowerCase() === name.toLowerCase().trim());
+      if (!card) {
+        showMessage('info', `“${name}” not found in the monster pool. Try another name.`);
+        return;
+      }
+      const gp = cardProps(card);
+      const tp = cardProps(target);
+      guessesLeft--;
+      const isCorrect = gp.name === tp.name;
+
+      // Build comparison row
+      const propsHtml = HINT_KEYS.map(key => {
+        const status = compareProp(key, gp[key], tp[key]);
+        const arrow = status !== 'match' ? direction(key, gp[key], tp[key]) : '';
+        return `
+          <div class="prop ${status}">
+            <span class="plabel">${HINT_LABELS[key].split(' ')[0]}</span>
+            ${formatVal(key, gp[key])}<span class="arrow">${arrow}</span>
+          </div>`;
+      }).join('');
+
+      const row = document.createElement('div');
+      row.className = 'guess-row-card';
+      row.innerHTML = `
+        <div class="guess-name ${isCorrect ? 'correct' : ''}">
+          ${isCorrect ? '★ ' : ''}${gp.name}
+        </div>
+        <div class="props">${propsHtml}</div>
+      `;
+      const list = document.getElementById('guessesList');
+      if (list.querySelector('.message')) list.innerHTML = '';
+      list.prepend(row);
+
+      guessHistory.push(gp.name);
+      document.getElementById('guessInput').value = '';
+      hideAutocomplete();
+
+      if (isCorrect) {
+        endGame(true);
+      } else if (guessesLeft <= 0) {
+        endGame(false);
+      } else {
+        updateUI();
+      }
+    }
+
+    function endGame(won) {
+      gameOver = true;
+      updateUI();
+      document.getElementById('guessInput').disabled = true;
+      document.getElementById('guessBtn').disabled = true;
+      document.getElementById('hintBtn').disabled = true;
+      const tp = cardProps(target);
+      const img = target.card_images?.[0]?.image_url || target.card_images?.[0]?.image_url_small;
+      if (won) {
+        showMessage('win', `
+          You summoned it in ${MAX_GUESSES - guessesLeft} guess${MAX_GUESSES - guessesLeft === 1 ? '' : 'es'}!
+          <div class="card-reveal">
+            ${img ? `<img src="${img}" alt="${tp.name}" />` : ''}
+            <strong>${tp.name}</strong>
+          </div>
+        `);
+      } else {
+        // Reveal all remaining hints
+        HINT_KEYS.forEach(k => { if (!(k in revealed)) revealed[k] = tp[k]; });
+        renderHints();
+        showMessage('lose', `
+          Out of guesses… The card was:
+          <div class="card-reveal">
+            ${img ? `<img src="${img}" alt="${tp.name}" />` : ''}
+            <strong>${tp.name}</strong>
+          </div>
+        `);
+      }
+    }
+
+    function showMessage(type, html) {
+      document.getElementById('messageArea').innerHTML =
+        `<div class="message ${type}">${html}</div>`;
+    }
+
+    // ─── Autocomplete ─────────────────────────────────────────
+    let acIndex = -1;
+    function showAutocomplete(query) {
+      const box = document.getElementById('autocomplete');
+      if (!query || query.length < 1) { hideAutocomplete(); return; }
+      const q = query.toLowerCase();
+      // Prefer possible cards, then fall back to all
+      let matches = possible.filter(c => c.name.toLowerCase().includes(q));
+      if (matches.length < 8) {
+        const extra = allCards.filter(c =>
+          c.name.toLowerCase().includes(q) && !matches.some(m => m.id === c.id)
+        );
+        matches = matches.concat(extra).slice(0, 12);
+      } else {
+        matches = matches.slice(0, 12);
+      }
+      if (!matches.length) { hideAutocomplete(); return; }
+      box.innerHTML = matches.map((c, i) =>
+        `<div class="ac-item" data-name="${c.name.replace(/"/g, '&quot;')}" data-idx="${i}">${c.name}</div>`
+      ).join('');
+      box.classList.add('show');
+      acIndex = -1;
+      box.querySelectorAll('.ac-item').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('guessInput').value = el.dataset.name;
+          hideAutocomplete();
+          submitGuess(el.dataset.name);
+        });
+      });
+    }
+    function hideAutocomplete() {
+      document.getElementById('autocomplete').classList.remove('show');
+      acIndex = -1;
+    }
+
+    // ─── Events ───────────────────────────────────────────────
+    document.getElementById('guessBtn').addEventListener('click', () => {
+      const v = document.getElementById('guessInput').value.trim();
+      if (v) submitGuess(v);
+    });
+    document.getElementById('guessInput').addEventListener('keydown', e => {
+      const box = document.getElementById('autocomplete');
+      const items = box.querySelectorAll('.ac-item');
+      if (e.key === 'ArrowDown' && items.length) {
+        e.preventDefault();
+        acIndex = Math.min(acIndex + 1, items.length - 1);
+        items.forEach((it, i) => it.classList.toggle('active', i === acIndex));
+      } else if (e.key === 'ArrowUp' && items.length) {
+        e.preventDefault();
+        acIndex = Math.max(acIndex - 1, 0);
+        items.forEach((it, i) => it.classList.toggle('active', i === acIndex));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (acIndex >= 0 && items[acIndex]) {
+          document.getElementById('guessInput').value = items[acIndex].dataset.name;
+          hideAutocomplete();
+          submitGuess(items[acIndex].dataset.name);
+        } else {
+          const v = document.getElementById('guessInput').value.trim();
+          if (v) submitGuess(v);
+        }
+      } else if (e.key === 'Escape') {
+        hideAutocomplete();
+      }
+    });
+    document.getElementById('guessInput').addEventListener('input', e => {
+      showAutocomplete(e.target.value);
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.guess-row')) hideAutocomplete();
+    });
+    document.getElementById('hintBtn').addEventListener('click', useRandomHint);
+    document.getElementById('newGameBtn').addEventListener('click', startGame);
+
+    // Expose for inline onclick
+    window.useHint = useHint;
+
+    // ─── Boot ─────────────────────────────────────────────────
+    (async () => {
+      try {
+        allCards = await loadCards();
+        if (allCards.length < 50) throw new Error('Too few cards loaded');
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('game').style.display = 'block';
+        startGame();
+      } catch (err) {
+        document.getElementById('loading').innerHTML = `
+          <p style="color:var(--red)">Failed to load cards from YGOPRODeck.</p>
+          <p style="margin-top:0.5rem;font-size:0.9rem">${err.message}</p>
+          <p style="margin-top:1rem"><button onclick="location.reload()">Retry</button></p>
+        `;
+      }
+    })();
+  </script>
+</body>
+</html>
