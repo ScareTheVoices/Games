@@ -1,1166 +1,278 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Yu-Gi-Oh! Cardle</title>
-  <style>
-    :root {
-      --bg: #0d0b1a;
-      --panel: #1a1625;
-      --border: #3d2b5a;
-      --gold: #e8c547;
-      --gold-dim: #a88b2a;
-      --purple: #7b5ea7;
-      --text: #f0e6ff;
-      --muted: #9a8bb5;
-      --green: #2ecc71;
-      --yellow: #f1c40f;
-      --red: #e74c3c;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      background-image:
-        radial-gradient(ellipse at 20% 0%, #2a1a4a 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 100%, #1a0a3a 0%, transparent 50%);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1rem;
-      padding-bottom: 2rem;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--border);
-    }
-    h1 {
-      font-size: 1.7rem;
-      background: linear-gradient(135deg, var(--gold), #fff3a0, var(--gold));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cardle</title>
+<style>
+:root{--bg:#120a24;--p1:#241442;--p2:#3a2468;--gold:#e6b93c;--gold2:#8a6a1c;--tx:#f3ecff;--mu:#a99bc9;--gr:#2e9e5b;--ye:#c9a227;--rd:#a8323e}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(circle at 50% -10%,#3b1f70,#120a24 65%) fixed;color:var(--tx);font:15px/1.35 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+h1{margin:6px 0 2px;text-align:center;font:700 34px Georgia,'Times New Roman',serif;letter-spacing:.06em;color:var(--gold);text-shadow:0 2px 0 #4a3510,0 0 18px rgba(230,185,60,.35)}
+.sub{text-align:center;color:var(--mu);font-size:13px;margin-bottom:10px}
+button,select,input{font:inherit;color:var(--tx)}
+button{cursor:pointer}
+.stat{display:flex;justify-content:space-between;gap:6px;background:var(--p1);border:1px solid var(--gold2);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:13px;color:var(--mu)}
+.stat b{color:var(--gold)}
+.hints{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.h{background:linear-gradient(160deg,var(--p2),var(--p1));border:1px solid var(--gold2);border-radius:8px;padding:8px 6px;min-height:58px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.h small{color:var(--mu);font-size:11px}
+.h b{font-size:16px;overflow-wrap:anywhere}
+.h.on{border-color:var(--gold);box-shadow:inset 0 0 12px rgba(230,185,60,.25)}
+.h.on b{color:var(--gold)}
+.h:disabled{cursor:default}
+.h:not(.on):disabled{opacity:.45}
+.h:not(.on):not(:disabled):hover{border-color:var(--gold)}
+.acts{display:flex;gap:8px;margin:10px 0}
+.btn{flex:1;padding:12px;border-radius:8px;border:1px solid var(--gold2);background:var(--p1);font-weight:600}
+.btn.pri{background:linear-gradient(180deg,#f0c94f,#b88a1c);color:#2a1a04;border-color:#f0c94f}
+.btn:disabled{opacity:.4;cursor:default}
+.gr{background:var(--p1);border:1px solid #4a3480;border-radius:10px;padding:8px;margin-bottom:10px}
+.gh{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:600}
+.gh img{width:34px;height:34px;object-fit:cover;border-radius:4px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.t{border-radius:6px;padding:5px 4px;text-align:center;min-height:50px;display:flex;flex-direction:column;justify-content:center}
+.t small{font-size:10.5px;opacity:.85}
+.t b{font-size:14px;overflow-wrap:anywhere}
+.t.g{background:var(--gr)}.t.y{background:var(--ye);color:#1f1602}.t.r{background:var(--rd)}
+.end{text-align:center;background:var(--p1);border:2px solid var(--gold);border-radius:12px;padding:14px;margin-top:10px}
+.end img{width:150px;border-radius:6px;margin:8px 0}
+.end h2{margin:0;font:700 22px Georgia,serif;color:var(--gold)}
+#load{text-align:center;padding:60px 10px;color:var(--mu)}
+#load .bar{height:8px;background:var(--p1);border-radius:4px;overflow:hidden;margin:14px auto;max-width:300px}
+#load .bar i{display:block;height:100%;width:0;background:var(--gold)}
+#cat{position:fixed;inset:0;background:var(--bg);z-index:10;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+#cat[hidden],[hidden]{display:none!important}
+.ch{padding:10px;background:var(--p1);border-bottom:1px solid var(--gold2);display:flex;flex-direction:column;gap:7px}
+.row{display:flex;gap:6px;align-items:center}
+.seg{display:flex;flex:1;border:1px solid var(--gold2);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:8px;background:transparent;border:0}
+.seg button.on{background:var(--gold);color:#2a1a04;font-weight:700}
+.ch input,.ch select{background:var(--bg);border:1px solid #4a3480;border-radius:8px;padding:8px;min-width:0}
+.ch input#q{width:100%}
+.sq{padding:8px 12px;background:var(--bg);border:1px solid #4a3480;border-radius:8px}
+#cnt{margin-left:auto;color:var(--mu);font-size:12px;white-space:nowrap}
+#fl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#fl label{font-size:11px;color:var(--mu);display:flex;flex-direction:column;gap:2px}
+#fl .mm{display:flex;gap:4px}#fl .mm input{width:50%}
+#list{flex:1;overflow-y:auto;padding:8px}
+.it{display:flex;gap:10px;align-items:center;padding:6px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+.it:hover{background:var(--p1);border-color:var(--gold2)}
+.it img{width:52px;height:52px;object-fit:cover;border-radius:5px;background:var(--p2);flex:none}
+.it b{display:block}.it small{color:var(--mu)}
+.it.gd{opacity:.35;pointer-events:none}
+.empty{text-align:center;color:var(--mu);padding:30px}
+#cf{position:fixed;inset:0;background:rgba(5,2,12,.8);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px}
+#cf .box{background:var(--p1);border:2px solid var(--gold);border-radius:12px;padding:16px;text-align:center;max-width:320px;width:100%}
+#cf img{width:140px;border-radius:6px}
+#cf h3{margin:8px 0 2px;font:700 19px Georgia,serif;color:var(--gold)}
+#cf small{color:var(--mu)}
+</style></head><body>
+<main>
+<h1>CARDLE</h1>
+<div class="sub">Guess the hidden Yu-Gi-Oh! monster</div>
+<div id="load"><div id="lt">Loading monsters…</div><div class="bar"><i id="lb"></i></div></div>
+<div id="game" hidden>
+  <div class="stat" id="stat"></div>
+  <div class="hints" id="hints"></div>
+  <div class="acts"><button class="btn" id="rnd">Random hint</button><button class="btn pri" id="browse">Browse cards</button></div>
+  <div id="guesses"></div>
+  <div id="end"></div>
+</div>
+</main>
 
-    .stats-bar {
-      display: flex;
-      justify-content: center;
-      gap: 0.75rem;
-      margin: 0.75rem 0;
-      flex-wrap: wrap;
-    }
-    .stat {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.4rem 0.85rem;
-      text-align: center;
-      min-width: 80px;
-    }
-    .stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; }
-    .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--gold); }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1rem;
-      margin-bottom: 0.85rem;
-    }
-    .panel-title {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--gold-dim);
-      margin-bottom: 0.65rem;
-    }
-
-    /* Hints */
-    .hints-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-    }
-    @media (min-width: 480px) {
-      .hints-grid { grid-template-columns: repeat(6, 1fr); }
-    }
-    .hint-card {
-      background: #12101c;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.55rem 0.35rem;
-      text-align: center;
-      transition: all 0.15s;
-      min-height: 58px;
-    }
-    .hint-card.revealed { border-color: var(--gold); background: #1f1a0f; }
-    .hint-card.available:active, .hint-card.available:hover {
-      border-color: var(--purple);
-      transform: scale(0.97);
-    }
-    .hint-card.disabled { opacity: 0.4; pointer-events: none; }
-    .hint-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; line-height: 1.2; }
-    .hint-value { font-size: 0.9rem; font-weight: 600; margin-top: 0.2rem; word-break: break-word; }
-    .hint-value.hidden { color: var(--muted); font-style: italic; font-weight: 400; font-size: 0.85rem; }
-
-    .legend {
-      display: flex;
-      gap: 0.85rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      font-size: 0.7rem;
-      margin-top: 0.65rem;
-      color: var(--muted);
-    }
-    .legend span { display: flex; align-items: center; gap: 0.25rem; }
-    .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-    .dot.g { background: var(--green); }
-    .dot.y { background: var(--yellow); }
-    .dot.r { background: #c07080; }
-
-    /* Action buttons */
-    .actions {
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 0.5rem;
-    }
-    button {
-      background: linear-gradient(135deg, #5a3d8a, #3d2b5a);
-      border: 1px solid var(--purple);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 0.7rem 1.1rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    button:active:not(:disabled) { transform: scale(0.96); }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.primary {
-      background: linear-gradient(135deg, #c9a227, #8a6b1a);
-      border-color: var(--gold);
-      color: #1a1200;
-    }
-    button.big {
-      width: 100%;
-      padding: 0.9rem;
-      font-size: 1rem;
-      margin-top: 0.35rem;
-    }
-
-    /* Messages */
-    .message {
-      text-align: center;
-      padding: 0.9rem;
-      border-radius: 10px;
-      margin: 0.75rem 0;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-    .message.win {
-      background: linear-gradient(135deg, #0d3d24, #1a5c38);
-      border: 1px solid var(--green);
-      color: #a8f0c0;
-    }
-    .message.lose {
-      background: linear-gradient(135deg, #3d1520, #5a2030);
-      border: 1px solid var(--red);
-      color: #f0a0b0;
-    }
-    .message.info {
-      background: #1a1625;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .card-reveal {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.6rem;
-      margin-top: 0.75rem;
-    }
-    .card-reveal img {
-      max-width: 160px;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      border: 2px solid var(--gold);
-    }
-
-    /* Guesses */
-    .guesses { display: flex; flex-direction: column; gap: 0.5rem; }
-    .guess-row-card {
-      background: #12101c;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.65rem;
-    }
-    .guess-name {
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 0.4rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .guess-name.correct { color: var(--green); }
-    .guess-thumb {
-      width: 32px; height: 46px;
-      object-fit: cover;
-      border-radius: 3px;
-      border: 1px solid var(--border);
-    }
-    .props {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.3rem;
-    }
-    @media (min-width: 480px) {
-      .props { grid-template-columns: repeat(6, 1fr); }
-    }
-    .prop {
-      text-align: center;
-      padding: 0.3rem 0.15rem;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      background: #1a1625;
-      border: 1px solid transparent;
-    }
-    .prop .plabel { display: block; font-size: 0.55rem; color: var(--muted); text-transform: uppercase; }
-    .prop.match { background: #0d3d24; border-color: var(--green); color: var(--green); }
-    .prop.close { background: #3d3200; border-color: var(--yellow); color: var(--yellow); }
-    .prop.miss { background: #2a1520; border-color: #5a2a35; color: #c07080; }
-    .prop .arrow { font-size: 0.65rem; opacity: 0.85; }
-
-    .loading {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: var(--muted);
-    }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid var(--border);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .howto {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-    .howto ul { margin: 0.4rem 0 0 1.1rem; }
-    .howto li { margin-bottom: 0.25rem; }
-
-    footer {
-      text-align: center;
-      margin-top: 1.5rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font-size: 0.7rem;
-    }
-    footer a { color: var(--purple); }
-
-    /* ─── Catalogue Modal ─────────────────────────────────── */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(5, 3, 15, 0.92);
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-      overscroll-behavior: contain;
-    }
-    .modal-overlay.open { display: flex; }
-
-    .modal-header {
-      flex-shrink: 0;
-      padding: 0.75rem 1rem;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .modal-header h2 {
-      font-size: 1.05rem;
-      color: var(--gold);
-      flex: 1;
-    }
-    .modal-close {
-      background: #2a1f40;
-      border: 1px solid var(--border);
-      width: 36px; height: 36px;
-      border-radius: 8px;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      color: var(--text);
-    }
-
-    .modal-filters {
-      flex-shrink: 0;
-      padding: 0.6rem 1rem;
-      background: #12101c;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .filter-row {
-      display: flex;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .filter-row label {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      min-width: 52px;
-    }
-    .filter-row select,
-    .filter-row input[type="text"] {
-      flex: 1;
-      min-width: 0;
-      background: #1a1625;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      padding: 0.45rem 0.6rem;
-      font-size: 0.85rem;
-      outline: none;
-    }
-    .filter-row select:focus,
-    .filter-row input:focus { border-color: var(--purple); }
-    .filter-chips {
-      display: flex;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-    }
-    .chip {
-      background: #1a1625;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 0.3rem 0.7rem;
-      font-size: 0.75rem;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.12s;
-    }
-    .chip.active {
-      background: #2a1f0a;
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-    .chip:active { transform: scale(0.95); }
-
-    .modal-meta {
-      flex-shrink: 0;
-      padding: 0.4rem 1rem;
-      font-size: 0.75rem;
-      color: var(--muted);
-      background: #0f0d18;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-meta strong { color: var(--gold); }
-
-    .catalogue-scroll {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 0.6rem;
-      overscroll-behavior: contain;
-    }
-
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-      gap: 0.55rem;
-    }
-    @media (min-width: 480px) {
-      .card-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-    }
-
-    .cat-card {
-      background: #12101c;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.12s;
-      display: flex;
-      flex-direction: column;
-    }
-    .cat-card:active {
-      border-color: var(--gold);
-      transform: scale(0.96);
-    }
-    .cat-card img {
-      width: 100%;
-      aspect-ratio: 59 / 86;
-      object-fit: cover;
-      background: #0a0812;
-      display: block;
-    }
-    .cat-card-info {
-      padding: 0.35rem 0.4rem 0.45rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-    .cat-card-name {
-      font-size: 0.7rem;
-      font-weight: 600;
-      line-height: 1.2;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .cat-card-stats {
-      font-size: 0.6rem;
-      color: var(--muted);
-      line-height: 1.3;
-    }
-
-    .load-more {
-      text-align: center;
-      padding: 1rem;
-    }
-    .load-more button {
-      width: 100%;
-      max-width: 280px;
-    }
-
-    .empty-cat {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    /* Confirm pick bar */
-    .pick-bar {
-      flex-shrink: 0;
-      padding: 0.75rem 1rem;
-      background: var(--panel);
-      border-top: 1px solid var(--border);
-      display: none;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .pick-bar.show { display: flex; }
-    .pick-bar img {
-      width: 40px; height: 58px;
-      object-fit: cover;
-      border-radius: 4px;
-      border: 1px solid var(--gold);
-    }
-    .pick-bar-name {
-      flex: 1;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .pick-bar button { flex-shrink: 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>✦ Cardle ✦</h1>
-      <p class="subtitle">Guess the Yu-Gi-Oh! monster · Wordle-style</p>
-    </header>
-
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <p>Summoning card database from YGOPRODeck…</p>
-      <p style="font-size:0.8rem;margin-top:0.5rem;opacity:0.7" id="loadProgress"></p>
+<div id="cat" hidden>
+  <div class="ch">
+    <div class="row"><div class="seg"><button data-m="match" class="on">Matching hints</button><button data-m="all">All cards</button></div><button class="sq" id="cx" aria-label="Close">✕</button></div>
+    <input id="q" type="search" placeholder="Search by name">
+    <div class="row">
+      <select id="sort"><option value="name">Name</option><option value="atk">ATK</option><option value="def">DEF</option><option value="lv">Level/Rank/Link</option></select>
+      <button class="sq" id="dir" aria-label="Sort direction">↑</button>
+      <button class="sq" id="ft">Filters</button>
+      <span id="cnt"></span>
     </div>
-
-    <div id="game" style="display:none">
-      <div class="stats-bar">
-        <div class="stat">
-          <div class="stat-label">Guesses</div>
-          <div class="stat-value" id="guessesLeft">6</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Hints</div>
-          <div class="stat-value" id="hintsLeft">5</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Possible</div>
-          <div class="stat-value" id="possibleCount">—</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Hints — tap an unrevealed one to spend a hint</div>
-        <div class="hints-grid" id="hintsGrid"></div>
-        <div class="legend">
-          <span><span class="dot g"></span> Exact</span>
-          <span><span class="dot y"></span> Close</span>
-          <span><span class="dot r"></span> Miss</span>
-        </div>
-        <div class="actions" style="margin-top:0.75rem">
-          <button id="hintBtn">Random Hint</button>
-          <button id="newGameBtn">New Game</button>
-        </div>
-      </div>
-
-      <div class="panel" id="inputPanel">
-        <div class="panel-title">Make a guess</div>
-        <button class="primary big" id="openCatalogueBtn">📖 Browse Card Catalogue</button>
-        <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:0.5rem">
-          Tap a card from the full list to guess it
-        </p>
-      </div>
-
-      <div id="messageArea"></div>
-
-      <div class="panel">
-        <div class="panel-title">Your guesses</div>
-        <div class="guesses" id="guessesList">
-          <p class="message info" style="margin:0">No guesses yet. Open the catalogue or use a hint!</p>
-        </div>
-      </div>
-
-      <div class="panel howto">
-        <div class="panel-title">How to play</div>
-        <ul>
-          <li>One free hint is revealed at the start. You have <strong>5 hints total</strong> and <strong>6 guesses</strong>.</li>
-          <li>Tap any unrevealed hint (or Random Hint) to narrow the possible cards.</li>
-          <li>Open the <strong>Card Catalogue</strong> to browse and pick a monster to guess — no need to know names by heart.</li>
-          <li>The catalogue defaults to cards that still match your hints. Toggle “All cards” to see everything.</li>
-          <li>Green = exact · Yellow = close on numbers · Red = miss (+ arrows for higher/lower).</li>
-        </ul>
-      </div>
-    </div>
-
-    <footer>
-      Card data via <a href="https://ygoprodeck.com/" target="_blank" rel="noopener">YGOPRODeck API</a>.
-      Not affiliated with Konami.
-    </footer>
-  </div>
-
-  <!-- Catalogue Modal -->
-  <div class="modal-overlay" id="catalogueModal">
-    <div class="modal-header">
-      <h2>Card Catalogue</h2>
-      <button class="modal-close" id="closeCatalogue" aria-label="Close">✕</button>
-    </div>
-
-    <div class="modal-filters">
-      <div class="filter-row">
-        <input type="text" id="catSearch" placeholder="Search name…" />
-      </div>
-      <div class="filter-chips" id="scopeChips">
-        <span class="chip active" data-scope="possible">Matching hints</span>
-        <span class="chip" data-scope="all">All cards</span>
-      </div>
-      <div class="filter-row">
-        <label>Frame</label>
-        <select id="filterFrame">
-          <option value="">Any</option>
-          <option>Normal</option>
-          <option>Effect</option>
-          <option>Ritual</option>
-          <option>Fusion</option>
-          <option>Synchro</option>
-          <option>XYZ</option>
-          <option>Link</option>
-        </select>
-        <label>Attr</label>
-        <select id="filterAttr">
-          <option value="">Any</option>
-          <option>DARK</option>
-          <option>LIGHT</option>
-          <option>EARTH</option>
-          <option>WATER</option>
-          <option>FIRE</option>
-          <option>WIND</option>
-          <option>DIVINE</option>
-        </select>
-      </div>
-      <div class="filter-row">
-        <label>Type</label>
-        <select id="filterRace">
-          <option value="">Any</option>
-        </select>
-        <label>Sort</label>
-        <select id="filterSort">
-          <option value="name">Name A–Z</option>
-          <option value="atk">ATK high→low</option>
-          <option value="def">DEF high→low</option>
-          <option value="level">Level high→low</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="modal-meta">
-      <span>Showing <strong id="catShowing">0</strong> of <strong id="catTotal">0</strong></span>
-      <span id="catPageInfo"></span>
-    </div>
-
-    <div class="catalogue-scroll" id="catalogueScroll">
-      <div class="card-grid" id="cardGrid"></div>
-      <div class="load-more" id="loadMoreWrap" style="display:none">
-        <button id="loadMoreBtn">Load more cards</button>
-      </div>
-      <div class="empty-cat" id="emptyCat" style="display:none">No cards match these filters.</div>
-    </div>
-
-    <div class="pick-bar" id="pickBar">
-      <img id="pickImg" src="" alt="" />
-      <div class="pick-bar-name" id="pickName"></div>
-      <button class="primary" id="confirmPickBtn">Guess this</button>
+    <div id="fl" hidden>
+      <label>Frame<select id="fr"></select></label>
+      <label>Attribute<select id="at"></select></label>
+      <label>Type<select id="ra"></select></label>
+      <label>Level/Rank/Link<select id="lvf"></select></label>
+      <label>ATK range<span class="mm"><input id="a1" type="number" placeholder="min"><input id="a2" type="number" placeholder="max"></span></label>
+      <label>DEF range<span class="mm"><input id="d1" type="number" placeholder="min"><input id="d2" type="number" placeholder="max"></span></label>
     </div>
   </div>
+  <div id="list"></div>
+</div>
+<div id="cf" hidden></div>
 
-  <script>
-    // ─── Config ───────────────────────────────────────────────
-    const MAX_GUESSES = 6;
-    const MAX_HINTS = 5;
-    const API = 'https://db.ygoprodeck.com/api/v7/cardinfo.php';
-    const PAGE_SIZE = 48; // cards rendered per "page" in catalogue
+<script>
+const API='https://db.ygoprodeck.com/api/v7/cardinfo.php';
+const TYPES=['Normal Monster','Normal Tuner Monster','Effect Monster','Tuner Monster','Flip Effect Monster','Flip Tuner Effect Monster','Spirit Monster','Union Effect Monster','Gemini Monster','Toon Monster','Ritual Monster','Ritual Effect Monster','Pendulum Normal Monster','Pendulum Effect Monster','Pendulum Flip Effect Monster','Pendulum Tuner Effect Monster','Pendulum Effect Ritual Monster','Pendulum Effect Fusion Monster','Fusion Monster','Synchro Monster','Synchro Tuner Monster','Synchro Pendulum Effect Monster','XYZ Monster','XYZ Pendulum Effect Monster','Link Monster'];
+const KEYS=['frame','lv','attr','race','atk','def'];
+const LBL={frame:'Frame',lv:'Level/Rank/Link',attr:'Attribute',race:'Type',atk:'ATK',def:'DEF'};
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=v=>v==null?'—':v===-1?'?':v;
 
-    // Every monster type the YGOPRODeck API uses (nothing left out)
-    const MONSTER_TYPE_LIST = [
-      // Main deck
-      'Normal Monster',
-      'Normal Tuner Monster',
-      'Effect Monster',
-      'Tuner Monster',
-      'Flip Effect Monster',
-      'Flip Tuner Effect Monster',
-      'Spirit Monster',
-      'Union Effect Monster',
-      'Gemini Monster',
-      'Toon Monster',
-      'Ritual Monster',
-      'Ritual Effect Monster',
-      'Pendulum Normal Monster',
-      'Pendulum Effect Monster',
-      'Pendulum Tuner Effect Monster',
-      'Pendulum Flip Effect Monster',
-      'Pendulum Effect Ritual Monster',
-      // Extra deck
-      'Fusion Monster',
-      'Pendulum Effect Fusion Monster',
-      'Synchro Monster',
-      'Synchro Tuner Monster',
-      'Synchro Pendulum Effect Monster',
-      'XYZ Monster',
-      'XYZ Pendulum Effect Monster',
-      'Link Monster'
-    ];
+function frameOf(t){
+  if(t.includes('Link'))return'Link';
+  if(t.includes('XYZ'))return'XYZ';
+  if(t.includes('Synchro'))return'Synchro';
+  if(t.includes('Fusion'))return'Fusion';
+  if(t.includes('Ritual'))return'Ritual';
+  if(t.includes('Normal'))return'Normal';
+  return'Effect';
+}
+function slim(c){
+  const f=frameOf(c.type),lk=f==='Link',im=(c.card_images&&c.card_images[0])||{};
+  return{id:c.id,name:c.name,frame:f,lv:(lk?c.linkval:c.level)||0,attr:c.attribute,race:c.race,
+    atk:c.atk==null?-1:c.atk,def:lk?null:(c.def==null?-1:c.def),
+    img:im.image_url_small||im.image_url,art:im.image_url_cropped||im.image_url_small};
+}
 
-    const FRAME_MAP = {
-      normal: 'Normal', effect: 'Effect', ritual: 'Ritual',
-      fusion: 'Fusion', synchro: 'Synchro', xyz: 'XYZ', link: 'Link',
-      normal_pendulum: 'Normal', effect_pendulum: 'Effect',
-      ritual_pendulum: 'Ritual', fusion_pendulum: 'Fusion',
-      synchro_pendulum: 'Synchro', xyz_pendulum: 'XYZ', link_pendulum: 'Link'
-    };
+/* ---------- loading ---------- */
+async function getJSON(url){
+  for(let i=0;i<4;i++){
+    try{
+      const r=await fetch(url);
+      if(r.status===400)return null;           // no cards of this type
+      if(r.status===429){await sleep(1500);continue}
+      if(!r.ok)throw new Error(r.status);
+      return await r.json();
+    }catch(e){await sleep(800*(i+1))}
+  }
+  throw new Error('Could not reach YGOPRODeck API');
+}
+let POOL=[],done=0;
+async function loadType(t,seen){
+  let off=0;
+  while(true){
+    const j=await getJSON(`${API}?type=${encodeURIComponent(t)}&format=tcg&num=100&offset=${off}`);
+    if(!j||!j.data)break;
+    for(const c of j.data)if(!seen.has(c.id))seen.set(c.id,slim(c));
+    prog(seen.size);
+    if(!j.meta||j.meta.next_page_offset==null)break;
+    off=j.meta.next_page_offset;
+    await sleep(120);
+  }
+}
+function prog(n){
+  $('#lt').textContent=`Loading monsters… ${n} cards · ${done}/${TYPES.length} card types`;
+  $('#lb').style.width=(done/TYPES.length*100)+'%';
+}
+async function init(){
+  $('#load').innerHTML='<div id="lt"></div><div class="bar"><i id="lb"></i></div>';
+  done=0;prog(0);
+  const seen=new Map(),q=[...TYPES];
+  try{
+    await Promise.all([1,2,3].map(async()=>{while(q.length){await loadType(q.shift(),seen);done++;prog(seen.size)}}));
+  }catch(e){
+    $('#load').innerHTML=`<p>${esc(e.message)}. Check your connection and try again.</p><button class="btn pri" id="retry">Retry</button>`;
+    $('#retry').onclick=init;return;
+  }
+  POOL=[...seen.values()];
+  buildFilters();
+  $('#load').hidden=true;$('#game').hidden=false;
+  newGame();
+}
 
-    const HINT_KEYS = ['frame', 'level', 'attribute', 'race', 'atk', 'def'];
-    const HINT_LABELS = {
-      frame: 'Frame',
-      level: 'Level/Rank/Link',
-      attribute: 'Attribute',
-      race: 'Type',
-      atk: 'ATK',
-      def: 'DEF'
-    };
-    const HINT_SHORT = {
-      frame: 'Frame',
-      level: 'Lv/Rk/Lk',
-      attribute: 'Attr',
-      race: 'Type',
-      atk: 'ATK',
-      def: 'DEF'
-    };
+/* ---------- game ---------- */
+let S;
+const matches=c=>[...S.rev].every(k=>c[k]===S.t[k]);
+function reveal(k,charge){if(S.rev.has(k))return;S.rev.add(k);if(charge)S.used++}
+function randomHint(){
+  const left=KEYS.filter(k=>!S.rev.has(k));
+  if(!left.length||S.used>=5||S.over)return;
+  reveal(left[Math.random()*left.length|0],true);render();
+}
+function newGame(){
+  S={t:POOL[Math.random()*POOL.length|0],rev:new Set(),used:0,g:[],over:false,won:false};
+  const k=KEYS[Math.random()*KEYS.length|0];reveal(k,true);
+  $('#end').innerHTML='';render();
+}
+function cmp(k,g,t){
+  if(g===t)return['g',''];
+  if(k==='lv'||k==='atk'||k==='def'){
+    if(g==null||t==null||g<0||t<0)return['r',''];
+    const d=t-g;
+    return[Math.abs(d)<=(k==='lv'?1:500)?'y':'r',d>0?'↑':'↓'];
+  }
+  return['r',''];
+}
+function submit(c){
+  S.g.push(c);
+  KEYS.forEach(k=>{if(c[k]===S.t[k])reveal(k,false)});   // exact matches are free
+  if(c.id===S.t.id){S.over=S.won=true}
+  else if(S.g.length>=6){S.over=true;KEYS.forEach(k=>reveal(k,false))}
+  render();
+}
+const lvWord=c=>c.frame==='Link'?'Link ':c.frame==='XYZ'?'Rank ':'Lv ';
+const stats=c=>`${c.frame} · ${c.attr} · ${esc(c.race)} · ${lvWord(c)}${c.lv} · ${fmt(c.atk)}/${fmt(c.def)}`;
 
-    // ─── State ────────────────────────────────────────────────
-    let allCards = [];
-    let possible = [];
-    let target = null;
-    let revealed = {};
-    let hintsUsed = 0;
-    let guessesLeft = MAX_GUESSES;
-    let gameOver = false;
+function render(){
+  const left=5-S.used;
+  $('#stat').innerHTML=`<span>Guesses <b>${S.g.length}/6</b></span><span>Hints left <b>${left}</b></span><span>Possible <b>${POOL.filter(matches).length}</b></span>`;
+  $('#hints').innerHTML=KEYS.map(k=>{
+    const r=S.rev.has(k),can=!r&&!S.over&&left>0;
+    return`<button class="h ${r?'on':''}" data-k="${k}" ${can?'':'disabled'}><small>${LBL[k]}</small><b>${r?fmt(S.t[k]):'?'}</b></button>`}).join('');
+  const canHint=!S.over&&left>0&&KEYS.some(k=>!S.rev.has(k));
+  $('#rnd').disabled=!canHint;$('#browse').disabled=S.over;
+  $('#guesses').innerHTML=S.g.map(c=>`<div class="gr"><div class="gh"><img src="${c.art}" alt=""><span>${esc(c.name)}</span></div><div class="tiles">${
+    KEYS.map(k=>{const[cl,ar]=cmp(k,c[k],S.t[k]);return`<div class="t ${cl}"><small>${LBL[k]}</small><b>${fmt(c[k])} ${ar}</b></div>`}).join('')}</div></div>`).join('');
+  $('#end').innerHTML=S.over?`<div class="end"><h2>${S.won?`You got it in ${S.g.length}!`:'Out of guesses'}</h2>
+    <img src="${S.t.img}" alt=""><div><b>${esc(S.t.name)}</b></div><small style="color:var(--mu)">${stats(S.t)}</small><br><br>
+    <button class="btn pri" style="width:100%" id="again">Play again</button></div>`:'';
+  if(S.over)$('#again').onclick=newGame;
+}
+$('#hints').onclick=e=>{const b=e.target.closest('.h');if(b&&!b.disabled){reveal(b.dataset.k,true);render()}};
+$('#rnd').onclick=randomHint;
 
-    // Catalogue state
-    let catScope = 'possible'; // 'possible' | 'all'
-    let catFiltered = [];
-    let catRendered = 0;
-    let selectedCard = null;
+/* ---------- catalogue ---------- */
+const cat={m:'match',q:'',fr:'',at:'',ra:'',lv:'',a1:'',a2:'',d1:'',d2:'',sort:'name',dir:1,res:[],n:0};
+const rng=(v,lo,hi)=>{if(lo===''&&hi==='')return true;if(v==null||v<0)return false;return(lo===''||v>=+lo)&&(hi===''||v<=+hi)};
+function opts(sel,arr,all){sel.innerHTML=`<option value="">${all}</option>`+arr.map(v=>`<option>${esc(v)}</option>`).join('')}
+function buildFilters(){
+  const u=k=>[...new Set(POOL.map(c=>c[k]))];
+  opts($('#fr'),['Normal','Effect','Ritual','Fusion','Synchro','XYZ','Link'],'Any');
+  opts($('#at'),u('attr').sort(),'Any');
+  opts($('#ra'),u('race').sort(),'Any');
+  opts($('#lvf'),u('lv').sort((a,b)=>a-b),'Any');
+}
+function runFilter(){
+  const c=cat,q=c.q.trim().toLowerCase();
+  let a=POOL.filter(x=>(c.m==='all'||matches(x))&&(!q||x.name.toLowerCase().includes(q))&&(!c.fr||x.frame===c.fr)&&(!c.at||x.attr===c.at)&&(!c.ra||x.race===c.ra)&&(c.lv===''||x.lv==c.lv)&&rng(x.atk,c.a1,c.a2)&&rng(x.def,c.d1,c.d2));
+  const s=c.sort;
+  a.sort((x,y)=>(s==='name'?x.name.localeCompare(y.name):(x[s]??-2)-(y[s]??-2)||x.name.localeCompare(y.name))*c.dir);
+  c.res=a;c.n=0;
+  $('#cnt').textContent=a.length+' cards';
+  $('#list').innerHTML='';$('#list').scrollTop=0;
+  if(!a.length)$('#list').innerHTML='<div class="empty">No cards match. Try clearing a filter or switching to All cards.</div>';
+  more();
+}
+function more(){
+  const c=cat,end=Math.min(c.n+60,c.res.length);let h='';
+  for(let i=c.n;i<end;i++){const x=c.res[i];
+    h+=`<div class="it ${S.g.some(g=>g.id===x.id)?'gd':''}" data-i="${i}"><img loading="lazy" src="${x.art}" alt=""><div><b>${esc(x.name)}</b><small>${stats(x)}</small></div></div>`}
+  c.n=end;$('#list').insertAdjacentHTML('beforeend',h);
+}
+$('#list').onscroll=e=>{const l=e.target;if(l.scrollTop+l.clientHeight>l.scrollHeight-400&&cat.n<cat.res.length)more()};
+$('#list').onclick=e=>{const it=e.target.closest('.it');if(it)confirmGuess(cat.res[+it.dataset.i])};
+$('#browse').onclick=()=>{$('#cat').hidden=false;runFilter()};
+$('#cx').onclick=()=>$('#cat').hidden=true;
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));cat.m=b.dataset.m;runFilter()});
+$('#ft').onclick=()=>$('#fl').hidden=!$('#fl').hidden;
+$('#dir').onclick=()=>{cat.dir*=-1;$('#dir').textContent=cat.dir>0?'↑':'↓';runFilter()};
+[['#q','q'],['#fr','fr'],['#at','at'],['#ra','ra'],['#lvf','lv'],['#a1','a1'],['#a2','a2'],['#d1','d1'],['#d2','d2'],['#sort','sort']]
+  .forEach(([s,k])=>$(s).oninput=e=>{cat[k]=e.target.value;runFilter()});
 
-    // ─── Helpers ──────────────────────────────────────────────
-    function normalizeFrame(c) {
-      const ft = (c.frameType || '').toLowerCase();
-      if (FRAME_MAP[ft]) return FRAME_MAP[ft];
-      const t = (c.type || '').toLowerCase();
-      if (t.includes('link')) return 'Link';
-      if (t.includes('xyz')) return 'XYZ';
-      if (t.includes('synchro')) return 'Synchro';
-      if (t.includes('fusion')) return 'Fusion';
-      if (t.includes('ritual')) return 'Ritual';
-      if (t.includes('effect') || t.includes('pendulum')) return 'Effect';
-      return 'Normal';
-    }
-
-    function getLevel(c) {
-      if (c.linkval != null) return c.linkval;
-      if (c.level != null) return c.level;
-      return null;
-    }
-
-    function cardProps(c) {
-      return {
-        name: c.name,
-        frame: normalizeFrame(c),
-        level: getLevel(c),
-        attribute: c.attribute || '—',
-        race: c.race || '—',
-        atk: c.atk != null ? c.atk : null,
-        def: c.def != null ? c.def : null,
-        id: c.id,
-        image: c.card_images?.[0]?.image_url_small || null,
-        imageFull: c.card_images?.[0]?.image_url || null
-      };
-    }
-
-    function formatVal(key, val) {
-      if (val === null || val === undefined) return '—';
-      return String(val);
-    }
-
-    // ─── Load cards from YGOPRODeck (full monster list) ───────
-    async function fetchAllOfType(typeName, progress) {
-      const pageSize = 500;
-      const results = [];
-      let offset = 0;
-      for (;;) {
-        progress.textContent = `Loading ${typeName}… ${results.length} (total pool building)`;
-        try {
-          const res = await fetch(
-            `${API}?format=tcg&type=${encodeURIComponent(typeName)}&num=${pageSize}&offset=${offset}`
-          );
-          if (!res.ok) break;
-          const data = await res.json();
-          const arr = data.data || [];
-          if (!arr.length) break;
-          results.push(...arr);
-          if (arr.length < pageSize) break;
-          offset += pageSize;
-          // brief pause to respect rate limit (20 req/s)
-          await new Promise(r => setTimeout(r, 60));
-        } catch (e) {
-          console.warn('Fetch failed for', typeName, e);
-          break;
-        }
-      }
-      return results;
-    }
-
-    async function loadCards() {
-      const progress = document.getElementById('loadProgress');
-      const seen = new Set();
-      const pool = [];
-
-      for (const typeName of MONSTER_TYPE_LIST) {
-        const cards = await fetchAllOfType(typeName, progress);
-        for (const c of cards) {
-          if (!seen.has(c.id) && c.name) {
-            // Keep any monster with identity; stats can be null on some edge cases
-            seen.add(c.id);
-            pool.push(c);
-          }
-        }
-        progress.textContent = `Loaded ${pool.length} monsters so far…`;
-      }
-
-      // Count normals for sanity check in console
-      const normals = pool.filter(c => (c.type || '').includes('Normal Monster')).length;
-      console.log(`Cardle pool: ${pool.length} monsters (${normals} Normal/Pendulum Normal)`);
-      progress.textContent = `Loaded ${pool.length} monsters (${normals} normals)`;
-      return pool;
-    }
-
-    function populateRaceFilter() {
-      const races = [...new Set(allCards.map(c => c.race).filter(Boolean))].sort();
-      const sel = document.getElementById('filterRace');
-      races.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r;
-        opt.textContent = r;
-        sel.appendChild(opt);
-      });
-    }
-
-    // ─── Game logic ───────────────────────────────────────────
-    function filterPossible() {
-      possible = allCards.filter(c => {
-        const p = cardProps(c);
-        for (const [k, v] of Object.entries(revealed)) {
-          if (p[k] !== v) return false;
-        }
-        return true;
-      });
-      document.getElementById('possibleCount').textContent = possible.length;
-    }
-
-    function pickTarget() {
-      const candidates = allCards.filter(c =>
-        c.card_images?.length &&
-        (c.atk > 0 || c.linkval) &&
-        c.name.length < 45
-      );
-      const pool = candidates.length > 80 ? candidates : allCards;
-      target = pool[Math.floor(Math.random() * pool.length)];
-    }
-
-    function startGame() {
-      revealed = {};
-      hintsUsed = 0;
-      guessesLeft = MAX_GUESSES;
-      gameOver = false;
-      selectedCard = null;
-      pickTarget();
-
-      // Free hint
-      const freeKey = HINT_KEYS[Math.floor(Math.random() * HINT_KEYS.length)];
-      revealed[freeKey] = cardProps(target)[freeKey];
-      hintsUsed = 1;
-
-      filterPossible();
-      updateUI();
-
-      document.getElementById('guessesList').innerHTML =
-        '<p class="message info" style="margin:0">Free hint revealed! Browse the catalogue or use another hint.</p>';
-      document.getElementById('messageArea').innerHTML = '';
-      document.getElementById('openCatalogueBtn').disabled = false;
-      document.getElementById('hintBtn').disabled = false;
-    }
-
-    function updateUI() {
-      document.getElementById('guessesLeft').textContent = guessesLeft;
-      document.getElementById('hintsLeft').textContent = MAX_HINTS - hintsUsed;
-      renderHints();
-      filterPossible();
-    }
-
-    function renderHints() {
-      const grid = document.getElementById('hintsGrid');
-      const canHint = !gameOver && hintsUsed < MAX_HINTS;
-      grid.innerHTML = HINT_KEYS.map(key => {
-        const isRevealed = key in revealed;
-        const classes = ['hint-card'];
-        if (isRevealed) classes.push('revealed');
-        else if (canHint) classes.push('available');
-        else classes.push('disabled');
-        const val = isRevealed ? formatVal(key, revealed[key]) : '???';
-        return `
-          <div class="${classes.join(' ')}" data-key="${key}"
-               ${!isRevealed && canHint ? `onclick="useHint('${key}')"` : ''}>
-            <div class="hint-label">${HINT_LABELS[key]}</div>
-            <div class="hint-value ${isRevealed ? '' : 'hidden'}">${val}</div>
-          </div>`;
-      }).join('');
-    }
-
-    function useHint(key) {
-      if (gameOver || hintsUsed >= MAX_HINTS || key in revealed) return;
-      revealed[key] = cardProps(target)[key];
-      hintsUsed++;
-      filterPossible();
-      updateUI();
-      if (possible.length === 1 && !gameOver) {
-        showMessage('info', `Only one card left: <strong>${possible[0].name}</strong>`);
-      }
-    }
-
-    function useRandomHint() {
-      const remaining = HINT_KEYS.filter(k => !(k in revealed));
-      if (!remaining.length || hintsUsed >= MAX_HINTS || gameOver) return;
-      useHint(remaining[Math.floor(Math.random() * remaining.length)]);
-    }
-
-    function compareProp(key, guessVal, targetVal) {
-      if (guessVal === targetVal) return 'match';
-      if (['atk', 'def', 'level'].includes(key) &&
-          typeof guessVal === 'number' && typeof targetVal === 'number') {
-        if (key === 'level' && Math.abs(guessVal - targetVal) <= 1) return 'close';
-        if ((key === 'atk' || key === 'def') && Math.abs(guessVal - targetVal) <= 500) return 'close';
-      }
-      return 'miss';
-    }
-
-    function direction(key, g, t) {
-      if (typeof g !== 'number' || typeof t !== 'number') return '';
-      if (g < t) return ' ↑';
-      if (g > t) return ' ↓';
-      return '';
-    }
-
-    function submitGuess(card) {
-      if (gameOver || guessesLeft <= 0) return;
-      const gp = cardProps(card);
-      const tp = cardProps(target);
-      guessesLeft--;
-      const isCorrect = gp.name === tp.name;
-
-      const propsHtml = HINT_KEYS.map(key => {
-        const status = compareProp(key, gp[key], tp[key]);
-        const arrow = status !== 'match' ? direction(key, gp[key], tp[key]) : '';
-        return `
-          <div class="prop ${status}">
-            <span class="plabel">${HINT_SHORT[key]}</span>
-            ${formatVal(key, gp[key])}<span class="arrow">${arrow}</span>
-          </div>`;
-      }).join('');
-
-      const thumb = gp.image
-        ? `<img class="guess-thumb" src="${gp.image}" alt="" loading="lazy" />`
-        : '';
-
-      const row = document.createElement('div');
-      row.className = 'guess-row-card';
-      row.innerHTML = `
-        <div class="guess-name ${isCorrect ? 'correct' : ''}">
-          ${thumb}${isCorrect ? '★ ' : ''}${gp.name}
-        </div>
-        <div class="props">${propsHtml}</div>
-      `;
-      const list = document.getElementById('guessesList');
-      if (list.querySelector('.message')) list.innerHTML = '';
-      list.prepend(row);
-
-      closeCatalogue();
-
-      if (isCorrect) {
-        endGame(true);
-      } else if (guessesLeft <= 0) {
-        endGame(false);
-      } else {
-        updateUI();
-      }
-    }
-
-    function endGame(won) {
-      gameOver = true;
-      updateUI();
-      document.getElementById('openCatalogueBtn').disabled = true;
-      document.getElementById('hintBtn').disabled = true;
-      const tp = cardProps(target);
-      const img = tp.imageFull || tp.image;
-      if (won) {
-        showMessage('win', `
-          You summoned it in ${MAX_GUESSES - guessesLeft} guess${MAX_GUESSES - guessesLeft === 1 ? '' : 'es'}!
-          <div class="card-reveal">
-            ${img ? `<img src="${img}" alt="${tp.name}" />` : ''}
-            <strong>${tp.name}</strong>
-          </div>
-        `);
-      } else {
-        HINT_KEYS.forEach(k => { if (!(k in revealed)) revealed[k] = tp[k]; });
-        renderHints();
-        showMessage('lose', `
-          Out of guesses… The card was:
-          <div class="card-reveal">
-            ${img ? `<img src="${img}" alt="${tp.name}" />` : ''}
-            <strong>${tp.name}</strong>
-          </div>
-        `);
-      }
-    }
-
-    function showMessage(type, html) {
-      document.getElementById('messageArea').innerHTML =
-        `<div class="message ${type}">${html}</div>`;
-    }
-
-    // ─── Catalogue ────────────────────────────────────────────
-    function openCatalogue() {
-      if (gameOver) return;
-      selectedCard = null;
-      document.getElementById('pickBar').classList.remove('show');
-      document.getElementById('catalogueModal').classList.add('open');
-      document.body.style.overflow = 'hidden';
-      // Reset search a bit but keep filters
-      applyCatalogueFilters();
-      document.getElementById('catalogueScroll').scrollTop = 0;
-    }
-
-    function closeCatalogue() {
-      document.getElementById('catalogueModal').classList.remove('open');
-      document.body.style.overflow = '';
-      selectedCard = null;
-      document.getElementById('pickBar').classList.remove('show');
-    }
-
-    function applyCatalogueFilters() {
-      const q = document.getElementById('catSearch').value.trim().toLowerCase();
-      const frame = document.getElementById('filterFrame').value;
-      const attr = document.getElementById('filterAttr').value;
-      const race = document.getElementById('filterRace').value;
-      const sort = document.getElementById('filterSort').value;
-
-      let pool = catScope === 'possible' ? possible : allCards;
-
-      catFiltered = pool.filter(c => {
-        const p = cardProps(c);
-        if (q && !p.name.toLowerCase().includes(q)) return false;
-        if (frame && p.frame !== frame) return false;
-        if (attr && p.attribute !== attr) return false;
-        if (race && p.race !== race) return false;
-        return true;
-      });
-
-      // Sort
-      catFiltered.sort((a, b) => {
-        const pa = cardProps(a), pb = cardProps(b);
-        if (sort === 'name') return pa.name.localeCompare(pb.name);
-        if (sort === 'atk') return (pb.atk ?? -1) - (pa.atk ?? -1);
-        if (sort === 'def') return (pb.def ?? -1) - (pa.def ?? -1);
-        if (sort === 'level') return (pb.level ?? -1) - (pa.level ?? -1);
-        return 0;
-      });
-
-      catRendered = 0;
-      document.getElementById('cardGrid').innerHTML = '';
-      document.getElementById('catTotal').textContent = catFiltered.length;
-      renderCataloguePage();
-    }
-
-    function renderCataloguePage() {
-      const grid = document.getElementById('cardGrid');
-      const slice = catFiltered.slice(catRendered, catRendered + PAGE_SIZE);
-      const frag = document.createDocumentFragment();
-
-      slice.forEach(c => {
-        const p = cardProps(c);
-        const el = document.createElement('div');
-        el.className = 'cat-card';
-        el.dataset.id = c.id;
-        const lvlLabel = p.frame === 'Link' ? `Link ${p.level ?? '—'}`
-          : p.frame === 'XYZ' ? `Rank ${p.level ?? '—'}`
-          : `Lv ${p.level ?? '—'}`;
-        el.innerHTML = `
-          <img src="${p.image || ''}" alt="${p.name}" loading="lazy"
-               onerror="this.style.background='#1a1625';this.src='';this.alt='';" />
-          <div class="cat-card-info">
-            <div class="cat-card-name">${p.name}</div>
-            <div class="cat-card-stats">
-              ${p.frame} · ${p.attribute}<br>
-              ${lvlLabel} · ${p.atk ?? '—'}/${p.def ?? '—'}
-            </div>
-          </div>
-        `;
-        el.addEventListener('click', () => selectCard(c));
-        frag.appendChild(el);
-      });
-
-      grid.appendChild(frag);
-      catRendered += slice.length;
-
-      document.getElementById('catShowing').textContent = catRendered;
-      document.getElementById('loadMoreWrap').style.display =
-        catRendered < catFiltered.length ? 'block' : 'none';
-      document.getElementById('emptyCat').style.display =
-        catFiltered.length === 0 ? 'block' : 'none';
-    }
-
-    function selectCard(c) {
-      selectedCard = c;
-      const p = cardProps(c);
-      document.getElementById('pickImg').src = p.image || '';
-      document.getElementById('pickName').textContent = p.name;
-      document.getElementById('pickBar').classList.add('show');
-      // Highlight selected
-      document.querySelectorAll('.cat-card').forEach(el => {
-        el.style.borderColor = el.dataset.id == c.id ? 'var(--gold)' : '';
-      });
-    }
-
-    // ─── Events ───────────────────────────────────────────────
-    document.getElementById('openCatalogueBtn').addEventListener('click', openCatalogue);
-    document.getElementById('closeCatalogue').addEventListener('click', closeCatalogue);
-    document.getElementById('hintBtn').addEventListener('click', useRandomHint);
-    document.getElementById('newGameBtn').addEventListener('click', startGame);
-    document.getElementById('confirmPickBtn').addEventListener('click', () => {
-      if (selectedCard) submitGuess(selectedCard);
-    });
-    document.getElementById('loadMoreBtn').addEventListener('click', renderCataloguePage);
-
-    // Scope chips
-    document.getElementById('scopeChips').addEventListener('click', e => {
-      const chip = e.target.closest('.chip');
-      if (!chip) return;
-      document.querySelectorAll('#scopeChips .chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      catScope = chip.dataset.scope;
-      applyCatalogueFilters();
-    });
-
-    // Filters
-    ['catSearch', 'filterFrame', 'filterAttr', 'filterRace', 'filterSort'].forEach(id => {
-      const el = document.getElementById(id);
-      const evt = id === 'catSearch' ? 'input' : 'change';
-      el.addEventListener(evt, () => applyCatalogueFilters());
-    });
-
-    // Close modal on backdrop (optional – header X is main)
-    document.getElementById('catalogueModal').addEventListener('click', e => {
-      if (e.target.id === 'catalogueModal') closeCatalogue();
-    });
-
-    window.useHint = useHint;
-
-    // ─── Boot ─────────────────────────────────────────────────
-    (async () => {
-      try {
-        allCards = await loadCards();
-        if (allCards.length < 50) throw new Error('Too few cards loaded from API');
-        populateRaceFilter();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('game').style.display = 'block';
-        startGame();
-      } catch (err) {
-        document.getElementById('loading').innerHTML = `
-          <p style="color:var(--red)">Failed to load cards from YGOPRODeck.</p>
-          <p style="margin-top:0.5rem;font-size:0.9rem">${err.message}</p>
-          <p style="margin-top:1rem"><button onclick="location.reload()">Retry</button></p>
-        `;
-      }
-    })();
-  </script>
-</body>
-</html>
+function confirmGuess(c){
+  const cf=$('#cf');
+  cf.innerHTML=`<div class="box"><img src="${c.img}" alt=""><h3>${esc(c.name)}</h3><small>${stats(c)}</small>
+    <div class="acts"><button class="btn" id="no">Cancel</button><button class="btn pri" id="yes">Guess this</button></div></div>`;
+  cf.hidden=false;
+  $('#no').onclick=()=>cf.hidden=true;
+  $('#yes').onclick=()=>{cf.hidden=true;$('#cat').hidden=true;submit(c)};
+}
+init();
+</script></body></html>
