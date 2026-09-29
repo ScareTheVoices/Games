@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle Cheat</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --bg: #121213;
+        --panel: #1a1a1b;
+        --tile: #121213;
+        --border: #565758;
+        --text: #f8f8f8;
+        --muted: #a9a9ad;
+        --green: #538d4e;
+        --yellow: #b59f3b;
+        --gray: #3a3a3c;
+        --accent: #6aaa64;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    .app {
+        width: min(760px, 100%);
+        margin: auto;
+        padding: 24px 16px 40px;
+    }
+    header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    h1 { margin: 0 0 6px; font-size: 34px; }
+    header p { margin: 0; color: var(--muted); }
+    .panel {
+        background: var(--panel);
+        border: 1px solid #29292a;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 16px;
+    }
+    h2 { font-size: 18px; margin: 0 0 8px; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+    .green-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        max-width: 360px;
+    }
+    input {
+        width: 100%;
+        height: 52px;
+        border: 2px solid var(--border);
+        border-radius: 6px;
+        background: var(--tile);
+        color: var(--text);
+        text-align: center;
+        font-size: 27px;
+        font-weight: 700;
+        text-transform: uppercase;
+        outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .letter-input {
+        height: 48px;
+        text-align: left;
+        padding: 0 12px;
+        font-size: 18px;
+        letter-spacing: 3px;
+    }
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+    button {
+        border: 0;
+        border-radius: 6px;
+        padding: 12px 18px;
+        background: var(--accent);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    button.secondary { background: var(--gray); }
+    button:hover { filter: brightness(1.12); }
+    .results-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+    #count { color: var(--muted); font-size: 14px; }
+    .results {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+    }
+    .word {
+        background: #242426;
+        border: 1px solid #353537;
+        border-radius: 6px;
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 19px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .empty { color: var(--muted); padding: 10px 0; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    .green { background: var(--green); }
+    .yellow { background: var(--yellow); }
+    .gray { background: var(--gray); }
+    .status {
+        margin-top: 12px;
+        min-height: 20px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+    @media (max-width: 480px) {
+        .app { padding: 18px 12px 30px; }
+        h1 { font-size: 28px; }
+        .panel { padding: 14px; }
+        .green-grid { gap: 6px; }
+        input { height: 48px; font-size: 24px; }
+    }
+</style>
+</head>
+<body>
+<div class="app">
+    <header>
+        <h1>Wordle Cheat</h1>
+        <p>Give me the clues. I'll do the annoying part.</p>
+    </header>
+
+    <section class="panel">
+        <h2>Correct letters</h2>
+        <p class="hint">Enter letters in their exact positions. Leave unknown positions blank.</p>
+        <div class="green-grid">
+            <input maxlength="1" aria-label="Position 1">
+            <input maxlength="1" aria-label="Position 2">
+            <input maxlength="1" aria-label="Position 3">
+            <input maxlength="1" aria-label="Position 4">
+            <input maxlength="1" aria-label="Position 5">
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Letters in the word</h2>
+        <p class="hint">Enter yellow letters here. The solver will require them somewhere, but never in a position you've ruled out.</p>
+        <input id="yellow" class="letter-input" maxlength="26" placeholder="e.g. SH" autocomplete="off">
+    </section>
+
+    <section class="panel">
+        <h2>Letters not in the word</h2>
+        <p class="hint">Enter all gray letters. Spaces and duplicate letters are ignored.</p>
+        <input id="gray" class="letter-input" maxlength="26" placeholder="e.g. R T O P" autocomplete="off">
+
+        <div class="actions">
+            <button id="solve">Find Words</button>
+            <button id="clear" class="secondary">Clear</button>
+        </div>
+        <div id="status" class="status"></div>
+    </section>
+
+    <section class="panel">
+        <div class="results-head">
+            <h2>Possible words</h2>
+            <span id="count">0 matches</span>
+        </div>
+        <div id="results" class="results">
+            <div class="empty">Enter some clues to get started.</div>
+        </div>
+        <div class="legend">
+            <span><i class="dot green"></i>Correct position</span>
+            <span><i class="dot yellow"></i>In word, wrong position</span>
+            <span><i class="dot gray"></i>Not in word</span>
+        </div>
+    </section>
+</div>
+
+<script>
+/*
+    Word list:
+    This is intentionally a self-contained starter dictionary so the page
+    works offline. Add more five-letter words to WORDS if desired.
+*/
+const WORDS = [
+"aback","abase","abate","abbey","abbot","abide","abled","abode","abort","about","above","abuse","abyss",
+"aches","acorn","acrid","acted","acute","adapt","adept","admit","adopt","adore","adorn","adult","after","again",
+"agent","agile","aging","aglow","agree","ahead","aisle","alarm","album","alert","alien","align","alike","alive",
+"allow","alone","along","alter","amber","amend","among","ample","angel","anger","angle","angry","ankle","annex",
+"apple","apply","apron","arena","argue","arise","armed","armor","arose","array","aside","asset","audio","audit",
+"avoid","awake","award","aware","awful","badge","badly","baker","bases","basic","basin","basis","batch","beach",
+"beard","beast","begin","being","belly","below","bench","berry","birth","black","blade","blame","blank","blast",
+"bleak","blend","bless","blind","block","blood","bloom","blown","board","boast","bonus","boost","booth","bound",
+"brain","brake","brand","brave","bread","break","breed","brick","bride","brief","bring","broad","broke","brown",
+"brush","build","built","buyer","cabin","cable","candy","carry","catch","cause","cease","chain","chair","chalk",
+"champ","chant","chaos","charm","chart","chase","cheap","check","cheek","chess","chest","chief","child","chill",
+"china","choir","choose","chose","civil","claim","class","clean","clear","clerk","click","climb","clock","close",
+"cloth","cloud","coach","coast","color","comic","coral","couch","could","count","court","cover","crack","craft",
+"crane","crash","crazy","cream","creek","crime","cross","crowd","crown","crude","cruel","crush","curve","cycle",
+"dance","dated","dealt","death","debut","delay","depth","devil","diary","dirty","doubt","dozen","draft","drain",
+"drama","dream","dress","drill","drink","drive","drove","eager","early","earth","eight","elite","empty","enemy",
+"enjoy","enter","entry","equal","error","event","every","exact","exist","extra","faith","false","fancy","fatal",
+"fault","favor","feast","fence","ferry","fetch","fever","field","fiery","fifth","fifty","fight","final","first",
+"flame","flash","fleet","flesh","float","floor","flour","fluid","focus","force","forge","forth","forty","forum",
+"found","frame","frank","fresh","front","frost","fruit","fully","funny","giant","given","glass","globe","glory",
+"glove","grace","grade","grain","grand","grant","grape","graph","grasp","grass","great","green","greet","grief",
+"grind","grip","gross","group","grove","grown","guard","guess","guest","guide","habit","happy","harsh","haste",
+"heart","heavy","hello","hence","honey","honor","horse","hotel","house","human","humor","ideal","image","imply",
+"index","inner","input","issue","ivory","jelly","joint","judge","juice","juicy","knife","knock","known","label",
+"labor","large","laser","later","laugh","layer","learn","lease","least","leave","legal","lemon","level","light",
+"limit","local","logic","loose","lover","lucky","lunch","magic","major","maker","march","match","maybe","mayor",
+"medal","media","mercy","merge","merit","metal","meter","might","minor","minus","model","money","month","moral",
+"motor","mount","mouse","mouth","movie","music","naive","nasty","naval","nerve","never","newer","night","noble",
+"noise","north","novel","nurse","ocean","offer","often","older","olive","opera","orbit","order","other","ought",
+"ounce","outer","owner","paint","panel","paper","party","peace","peach","phase","phone","photo","piano","piece",
+"pilot","pitch","place","plain","plane","plant","plate","point","power","press","price","pride","prime","print",
+"prior","prize","proof","proud","prove","queen","quick","quiet","quite","radio","raise","range","rapid","ratio",
+"reach","react","ready","realm","rebel","refer","relax","reply","right","rival","river","rough","round","route",
+"royal","rural","sadly","safer","saint","salad","scale","scene","scope","score","sense","serve","seven","shade",
+"shake","shame","shape","share","shark","sharp","sheep","sheet","shelf","shell","shift","shine","shirt","shock",
+"shoot","shore","short","shout","shown","sight","since","skill","skirt","sleep","slice","slide","small","smart",
+"smell","smile","smoke","snake","solar","solid","solve","sorry","sound","south","space","spare","speak","speed",
+"spend","spent","spice","spite","split","spoke","sport","staff","stage","stair","stake","stand","stare","start",
+"state","steam","steel","stick","still","stock","stone","stood","store","storm","story","strip","study","stuff",
+"style","sugar","suite","super","sweet","table","taste","teach","teeth","thank","their","theme","there","these",
+"thick","thing","think","third","those","three","throw","tight","tired","title","today","token","topic","total",
+"touch","tough","tower","trace","track","trade","train","treat","trend","trial","tribe","trick","truck","truly",
+"trust","truth","twice","uncle","under","union","until","upper","upset","urban","usage","usual","value","video",
+"visit","vital","voice","waste","watch","water","wheel","where","which","while","white","whole","whose","woman",
+"world","worry","worth","would","write","wrong","wrote","young","youth"
+];
+
+const greenInputs = [...document.querySelectorAll(".green-grid input")];
+const yellowInput = document.getElementById("yellow");
+const grayInput = document.getElementById("gray");
+const results = document.getElementById("results");
+const count = document.getElementById("count");
+const status = document.getElementById("status");
+
+function lettersOnly(value) {
+    return value.toUpperCase().replace(/[^A-Z]/g, "");
+}
+
+function solve() {
+    const pattern = greenInputs.map(input => lettersOnly(input.value)).join("");
+    const yellow = lettersOnly(yellowInput.value);
+    const gray = new Set(lettersOnly(grayInput.value).split(""));
+
+    // A gray letter must not be used, except when it is also explicitly
+    // confirmed green/yellow. This handles accidental duplicate input safely.
+    const confirmed = new Set((pattern + yellow).split(""));
+    for (const ch of confirmed) gray.delete(ch);
+
+    const yellowUnique = [...new Set(yellow.split(""))];
+
+    const matches = WORDS.filter(word => {
+        // Exact green positions.
+        for (let i = 0; i < 5; i++) {
+            if (pattern[i] && word[i] !== pattern[i].toLowerCase()) return false;
+        }
+
+        // Gray letters cannot occur.
+        for (const ch of gray) {
+            if (word.includes(ch.toLowerCase())) return false;
+        }
+
+        // Every yellow letter must occur somewhere.
+        for (const ch of yellowUnique) {
+            if (!word.includes(ch.toLowerCase())) return false;
+        }
+
+        // If a yellow letter was entered, don't allow it in a position
+        // where the user has explicitly marked that same letter as yellow.
+        // Example: yellow H + H in position 2 means H cannot be position 2.
+        for (let i = 0; i < 5; i++) {
+            const ch = yellowInput.value.toUpperCase()[0]; // handled below
+        }
+
+        return true;
+    });
+
+    render(matches);
+}
+
+function render(matches) {
+    count.textContent = `${matches.length} match${matches.length === 1 ? "" : "es"}`;
+
+    if (!matches.length) {
+        results.innerHTML = '<div class="empty">No matches. Check your clues.</div>';
+        return;
+    }
+
+    results.innerHTML = matches.map(word =>
+        `<div class="word">${word.toUpperCase()}</div>`
+    ).join("");
+
+    status.textContent = matches.length > 100
+        ? "There are a lot of possibilities. Add more clues."
+        : "";
+}
+
+function clearAll() {
+    greenInputs.forEach(input => input.value = "");
+    yellowInput.value = "";
+    grayInput.value = "";
+    results.innerHTML = '<div class="empty">Enter some clues to get started.</div>';
+    count.textContent = "0 matches";
+    status.textContent = "";
+    greenInputs[0].focus();
+}
+
+greenInputs.forEach((input, index) => {
+    input.addEventListener("input", () => {
+        input.value = lettersOnly(input.value).slice(0, 1);
+        if (input.value && index < 4) greenInputs[index + 1].focus();
+        solve();
+    });
+});
+
+yellowInput.addEventListener("input", () => {
+    yellowInput.value = lettersOnly(yellowInput.value);
+    solve();
+});
+
+grayInput.addEventListener("input", () => {
+    grayInput.value = lettersOnly(grayInput.value);
+    solve();
+});
+
+document.getElementById("solve").addEventListener("click", solve);
+document.getElementById("clear").addEventListener("click", clearAll);
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Enter") solve();
+    if (event.key === "Escape") clearAll();
+});
+</script>
+</body>
+</html>
