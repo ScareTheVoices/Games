@@ -1,0 +1,1201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Den — Virtual Bedroom</title>
+
+<style>
+:root {
+  --bg: #11101c;
+  --panel: #211e32;
+  --text: #f4edff;
+  --muted: #aaa3c4;
+  --accent: #b58cff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Consolas, "Courier New", monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px;
+}
+
+header {
+  width: min(100%, 1000px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 23px;
+  letter-spacing: 2px;
+}
+
+h1 span { color: var(--accent); }
+
+.status {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.game {
+  width: min(100%, 1000px);
+  border: 3px solid #39334e;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #151322;
+  box-shadow: 0 12px 40px #0007;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  outline: none;
+}
+
+.bottom {
+  width: min(100%, 1000px);
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid #39334e;
+  border-radius: 7px;
+  padding: 14px;
+  min-width: 0;
+}
+
+.panel h2 {
+  font-size: 13px;
+  margin: 0 0 9px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#message {
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 40px;
+}
+
+#nearby {
+  color: #d7c8ff;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.controls {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+kbd {
+  background: #373149;
+  border: 1px solid #514765;
+  border-radius: 3px;
+  padding: 2px 5px;
+  color: white;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+button {
+  background: #373049;
+  border: 1px solid #65547e;
+  color: white;
+  padding: 8px 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+button:hover { background: #504068; }
+
+footer {
+  width: min(100%, 1000px);
+  color: #807994;
+  font-size: 11px;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+  .bottom { grid-template-columns: 1fr; }
+  body { padding: 8px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PIXEL <span>DEN</span></h1>
+  <div class="status">VIRTUAL BEDROOM // PROTOTYPE 0.2</div>
+  <button id="popout">Open Stream View ↗</button>
+</header>
+
+<div class="game">
+  <canvas id="room" width="960" height="640" tabindex="0"
+    aria-label="Interactive top-down gamer bedroom"></canvas>
+</div>
+
+<div class="bottom">
+  <section class="panel">
+    <h2>Current activity</h2>
+    <div id="message">
+      Welcome home! Walk around your room or click furniture to interact.
+    </div>
+    <div id="nearby">Nearby: Bedroom</div>
+    <div class="actions">
+      <button id="interact">Interact</button>
+      <button id="stop">Stop walking</button>
+      <button id="reset">Return to spawn</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Controls</h2>
+    <div class="controls">
+      <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>
+      or <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd>
+      — Move<br>
+      <kbd>Mouse click</kbd> — Walk or interact<br>
+      <kbd>E</kbd> — Interact with nearby furniture<br>
+      <kbd>Esc</kbd> — Stop walking<br>
+      <kbd>Double-click</kbd> the stream view — Fullscreen
+    </div>
+  </section>
+</div>
+
+<footer>
+  Pixel Den prototype. Stream view excludes the control interface.
+  Real application launching and OBS integration are future features.
+</footer>
+
+<script>
+(() => {
+"use strict";
+
+const canvas = document.getElementById("room");
+let ctx = canvas.getContext("2d");
+const mainCtx = ctx;
+
+const message = document.getElementById("message");
+const nearbyLabel = document.getElementById("nearby");
+
+const TILE = 40;
+const COLS = canvas.width / TILE;
+const ROWS = canvas.height / TILE;
+
+let streamWindow = null;
+let streamCanvas = null;
+let streamCtx = null;
+
+const player = {
+  x: 480,
+  y: 440,
+  speed: 165,
+  direction: "down",
+  moving: false,
+  path: [],
+  targetObject: null,
+  step: 0
+};
+
+const keys = new Set();
+const blocked = new Set();
+const objects = [];
+
+let lastTime = 0;
+let nearbyObject = null;
+let lastNearby = null;
+
+function addObject(id, name, x, y, w, h, description, action) {
+  const object = {
+    id, name, x, y, w, h, description, action,
+    centerX: x + w / 2,
+    centerY: y + h / 2
+  };
+
+  objects.push(object);
+
+  const left = Math.floor(x / TILE);
+  const top = Math.floor(y / TILE);
+  const right = Math.ceil((x + w) / TILE);
+  const bottom = Math.ceil((y + h) / TILE);
+
+  for (let ty = top; ty < bottom; ty++) {
+    for (let tx = left; tx < right; tx++) {
+      if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {
+        blocked.add(`${tx},${ty}`);
+      }
+    }
+  }
+
+  return object;
+}
+
+// Furniture layout.
+const desk = addObject(
+  "desk", "Gaming PC", 40, 55, 240, 105,
+  "Your gaming setup is ready.", "computer"
+);
+
+const bookshelf = addObject(
+  "bookshelf", "Bookshelf", 350, 40, 120, 70,
+  "Campaign notes, books, and unfinished projects.", "bookshelf"
+);
+
+const posters = addObject(
+  "posters", "Wall posters", 540, 25, 180, 65,
+  "Your favorite games and memories cover the wall.", "posters"
+);
+
+const wardrobe = addObject(
+  "wardrobe", "Wardrobe", 820, 45, 100, 150,
+  "Everything is somehow still on a hanger.", "wardrobe"
+);
+
+const bed = addObject(
+  "bed", "Bed", 700, 300, 210, 220,
+  "A comfortable place to rest.", "bed"
+);
+
+const shelf = addObject(
+  "shelf", "Storage cabinet", 45, 260, 115, 130,
+  "A collection of things you might need someday.", "storage"
+);
+
+const mic = addObject(
+  "mic", "Streaming microphone", 325, 500, 90, 75,
+  "Your microphone is ready for the next stream.", "microphone"
+);
+
+const door = addObject(
+  "door", "Bedroom door", 875, 570, 65, 60,
+  "The rest of the world is waiting outside.", "door"
+);
+
+const rug = { x: 300, y: 235, w: 330, h: 190 };
+
+function tileOf(x, y) {
+  return {
+    x: Math.max(0, Math.min(COLS - 1, Math.floor(x / TILE))),
+    y: Math.max(0, Math.min(ROWS - 1, Math.floor(y / TILE)))
+  };
+}
+
+function tileCenter(tx, ty) {
+  return { x: tx * TILE + TILE / 2, y: ty * TILE + TILE / 2 };
+}
+
+function isBlocked(tx, ty) {
+  return tx < 0 || tx >= COLS || ty < 0 || ty >= ROWS ||
+    blocked.has(`${tx},${ty}`);
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+// A* pathfinding on a grid.
+function findPath(start, goal) {
+  const startKey = `${start.x},${start.y}`;
+  const goalKey = `${goal.x},${goal.y}`;
+
+  if (startKey === goalKey) return [];
+
+  const open = [{
+    x: start.x,
+    y: start.y,
+    g: 0,
+    f: Math.abs(goal.x - start.x) + Math.abs(goal.y - start.y)
+  }];
+
+  const cameFrom = new Map();
+  const costs = new Map([[startKey, 0]]);
+  const closed = new Set();
+  const directions = [[0,-1],[1,0],[0,1],[-1,0]];
+
+  while (open.length) {
+    open.sort((a, b) => a.f - b.f);
+
+    const current = open.shift();
+    const key = `${current.x},${current.y}`;
+
+    if (closed.has(key)) continue;
+    closed.add(key);
+
+    if (key === goalKey) {
+      const path = [];
+      let cursor = goalKey;
+
+      while (cursor !== startKey) {
+        const [x, y] = cursor.split(",").map(Number);
+        path.unshift(tileCenter(x, y));
+        cursor = cameFrom.get(cursor);
+        if (!cursor) return [];
+      }
+
+      return path;
+    }
+
+    for (const [dx, dy] of directions) {
+      const nx = current.x + dx;
+      const ny = current.y + dy;
+      const nextKey = `${nx},${ny}`;
+
+      if (isBlocked(nx, ny) || closed.has(nextKey)) continue;
+
+      const newCost = current.g + 1;
+      if (newCost >= (costs.get(nextKey) ?? Infinity)) continue;
+
+      costs.set(nextKey, newCost);
+      cameFrom.set(nextKey, key);
+
+      const heuristic =
+        Math.abs(goal.x - nx) + Math.abs(goal.y - ny);
+
+      open.push({
+        x: nx, y: ny,
+        g: newCost,
+        f: newCost + heuristic
+      });
+    }
+  }
+
+  return [];
+}
+
+function getApproachTile(object) {
+  const tx1 = Math.floor(object.x / TILE);
+  const ty1 = Math.floor(object.y / TILE);
+  const tx2 = Math.ceil((object.x + object.w) / TILE) - 1;
+  const ty2 = Math.ceil((object.y + object.h) / TILE) - 1;
+
+  const candidates = [];
+
+  for (let x = tx1; x <= tx2; x++) {
+    candidates.push([x, ty1 - 1], [x, ty2 + 1]);
+  }
+
+  for (let y = ty1; y <= ty2; y++) {
+    candidates.push([tx1 - 1, y], [tx2 + 1, y]);
+  }
+
+  const start = tileOf(player.x, player.y);
+  const reachable = [];
+
+  for (const [x, y] of candidates) {
+    if (isBlocked(x, y)) continue;
+
+    const path = findPath(start, { x, y });
+
+    if (start.x === x && start.y === y) {
+      reachable.push({ x, y, path, cost: 0 });
+    } else if (path.length) {
+      reachable.push({ x, y, path, cost: path.length });
+    }
+  }
+
+  reachable.sort((a, b) => a.cost - b.cost);
+  return reachable[0] || null;
+}
+
+function walkTo(x, y, object = null) {
+  player.targetObject = object;
+  player.path = [];
+
+  const goal = tileOf(x, y);
+
+  if (isBlocked(goal.x, goal.y)) {
+    if (object) {
+      const approach = getApproachTile(object);
+
+      if (!approach) {
+        setMessage("You can't find a clear path there.");
+        return;
+      }
+
+      player.path = approach.path;
+    } else {
+      setMessage("That spot is blocked by furniture.");
+      return;
+    }
+  } else {
+    player.path = findPath(tileOf(player.x, player.y), goal);
+  }
+
+  player.moving = player.path.length > 0;
+
+  if (!player.moving) {
+    if (object && distance(player, object) < 100) {
+      interactWith(object);
+    } else if (!object) {
+      player.targetObject = null;
+    }
+  }
+}
+
+function setMessage(text) {
+  message.textContent = text;
+}
+
+function interactWith(object) {
+  if (!object) return;
+
+  player.path = [];
+  player.moving = false;
+  player.targetObject = null;
+
+  const lines = {
+    computer:
+      "You sit down at your gaming PC. Ready to play, work, or start a stream.",
+    bookshelf:
+      "You browse your books and campaign notes. Inspiration strikes!",
+    posters:
+      "You take a moment to appreciate your favorite games.",
+    wardrobe:
+      "You check your wardrobe. The outfit situation remains complicated.",
+    bed:
+      "You flop onto the bed. A short break sounds pretty good.",
+    storage:
+      "You rummage through the cabinet. There is definitely something useful in here.",
+    microphone:
+      "You check your microphone. Your virtual streaming setup is ready.",
+    door:
+      "You head over to the door. In a later version, this could change scenes."
+  };
+
+  setMessage(lines[object.action] || object.description);
+  nearbyLabel.textContent = "Interacting: " + object.name;
+}
+
+function interactNearby() {
+  if (!nearbyObject) {
+    setMessage("There is nothing close enough to interact with.");
+    return;
+  }
+
+  if (distance(player, nearbyObject) < 90) {
+    interactWith(nearbyObject);
+  } else {
+    walkTo(nearbyObject.centerX, nearbyObject.centerY, nearbyObject);
+  }
+}
+
+// ---------------- DRAWING ----------------
+
+function rect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+function text(str, x, y, color = "#f5eaff", size = 12) {
+  ctx.font = `bold ${size}px Consolas, monospace`;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#171321";
+  ctx.fillText(str, x + 1, y + 1);
+  ctx.fillStyle = color;
+  ctx.fillText(str, x, y);
+}
+
+function drawRoom() {
+  rect(0, 0, 960, 640, "#55435f");
+
+  // Floorboards.
+  for (let y = 100; y < 640; y += 40) {
+    rect(0, y, 960, 2, "#624c6a");
+
+    for (let x = (y % 80 === 20 ? 20 : 0); x < 960; x += 80) {
+      rect(x, y - 40, 2, 40, "#4b3a56");
+    }
+  }
+
+  // Walls.
+  rect(0, 0, 960, 18, "#282337");
+  rect(0, 0, 18, 640, "#282337");
+  rect(942, 0, 18, 640, "#282337");
+  rect(0, 622, 960, 18, "#282337");
+  rect(18, 18, 924, 5, "#a28ab5");
+  rect(18, 18, 5, 604, "#8e759f");
+  rect(937, 18, 5, 604, "#8e759f");
+
+  // Window.
+  rect(340, 25, 125, 65, "#181c3b");
+  rect(347, 31, 111, 52, "#272e58");
+  rect(355, 38, 4, 4, "#f6dca0");
+  rect(390, 47, 3, 3, "#fff0b0");
+  rect(429, 36, 4, 4, "#f6dca0");
+  rect(400, 31, 3, 3, "#fff0b0");
+  rect(398, 31, 4, 52, "#ac93c1");
+  rect(347, 54, 111, 4, "#ac93c1");
+
+  // Rug.
+  rect(rug.x, rug.y, rug.w, rug.h, "#302949");
+  rect(rug.x + 8, rug.y + 8, rug.w - 16, rug.h - 16, "#49385f");
+  rect(rug.x + 18, rug.y + 18, rug.w - 36, rug.h - 36, "#57416b");
+
+  for (let x = rug.x + 24; x < rug.x + rug.w - 20; x += 28) {
+    rect(x, rug.y + 14, 3, 3, "#a98dc4");
+    rect(x, rug.y + rug.h - 18, 3, 3, "#a98dc4");
+  }
+
+  drawDesk(desk);
+  drawBookshelf(bookshelf);
+  drawPosters(posters);
+  drawWardrobe(wardrobe);
+  drawBed(bed);
+  drawCabinet(shelf);
+  drawMicrophone(mic);
+  drawDoor(door);
+
+  // Walking path.
+  for (let i = 0; i < player.path.length; i++) {
+    if (i % 2 === 0) {
+      const p = player.path[i];
+      rect(p.x - 2, p.y - 2, 4, 4, "#d9c0ff");
+    }
+  }
+}
+
+function drawDesk(o) {
+  rect(o.x + 5, o.y + 8, o.w, o.h, "#201b2b");
+  rect(o.x, o.y, o.w, o.h, "#72472f");
+  rect(o.x + 5, o.y + 5, o.w - 10, o.h - 10, "#a56b46");
+  rect(o.x + 12, o.y + 12, o.w - 24, 6, "#c58c5b");
+
+  rect(o.x + 55, o.y + 12, 110, 48, "#292333");
+  rect(o.x + 60, o.y + 17, 100, 36, "#514d91");
+  rect(o.x + 65, o.y + 22, 90, 26, "#313e74");
+  rect(o.x + 73, o.y + 28, 12, 3, "#b6a1ff");
+  rect(o.x + 88, o.y + 34, 48, 3, "#78e0df");
+  rect(o.x + 100, o.y + 60, 20, 5, "#302639");
+  rect(o.x + 90, o.y + 65, 40, 4, "#473448");
+
+  rect(o.x + 75, o.y + 75, 80, 12, "#332b40");
+
+  for (let i = 0; i < 9; i++) {
+    rect(o.x + 79 + i * 8, o.y + 78, 4, 3,
+      i % 3 === 0 ? "#a98cff" : "#d2c7e5");
+  }
+
+  rect(o.x + 172, o.y + 76, 12, 17, "#40334d");
+  rect(o.x + 177, o.y + 78, 2, 6, "#a98cff");
+
+  text("GAMING PC", o.x + 120, o.y + 103, "#fff1d8", 11);
+}
+
+function drawBookshelf(o) {
+  rect(o.x + 4, o.y + 5, o.w, o.h, "#231a2d");
+  rect(o.x, o.y, o.w, o.h, "#6c412e");
+  rect(o.x + 6, o.y + 6, o.w - 12, o.h - 12, "#39283c");
+
+  const colors = [
+    "#d47a78", "#dfb866", "#79b6aa", "#9b8ae0",
+    "#c2a1d7", "#78a6d6", "#d4a26f"
+  ];
+
+  for (const shelfY of [o.y + 13, o.y + 42]) {
+    let bx = o.x + 12;
+
+    for (let i = 0; i < 6; i++) {
+      const bw = 9 + (i % 3) * 3;
+      rect(bx, shelfY, bw, 22, colors[i]);
+      rect(bx + 2, shelfY + 5, 2, 2, "#fff0d2");
+      bx += bw + 3;
+    }
+
+    rect(o.x + 7, shelfY + 23, o.w - 14, 4, "#a8754c");
+  }
+
+  text("BOOKS", o.x + o.w / 2, o.y + o.h + 15, "#f1d9ff", 10);
+}
+
+function drawPosters(o) {
+  rect(o.x, o.y, o.w, o.h, "#6d557d");
+  rect(o.x + 5, o.y + 5, 78, 55, "#222440");
+  rect(o.x + 88, o.y + 5, 87, 55, "#37284c");
+
+  rect(o.x + 15, o.y + 14, 22, 22, "#8c75ce");
+  rect(o.x + 21, o.y + 10, 10, 30, "#d8c2ff");
+  rect(o.x + 10, o.y + 22, 32, 8, "#d8c2ff");
+
+  rect(o.x + 97, o.y + 13, 18, 26, "#e49a7b");
+  rect(o.x + 121, o.y + 17, 35, 4, "#e49a7b");
+  rect(o.x + 121, o.y + 27, 25, 4, "#7cd7d0");
+  rect(o.x + 121, o.y + 37, 30, 4, "#7cd7d0");
+}
+
+function drawWardrobe(o) {
+  rect(o.x + 5, o.y + 7, o.w, o.h, "#211a2a");
+  rect(o.x, o.y, o.w, o.h, "#704831");
+  rect(o.x + 7, o.y + 7, o.w - 14, o.h - 14, "#95613e");
+  rect(o.x + 48, o.y + 7, 4, o.h - 14, "#593726");
+  rect(o.x + 18, o.y + 12, 22, o.h - 24, "#80583e");
+  rect(o.x + 63, o.y + 12, 22, o.h - 24, "#80583e");
+  rect(o.x + 40, o.y + 72, 5, 5, "#e4bd73");
+  rect(o.x + 57, o.y + 72, 5, 5, "#e4bd73");
+  text("CLOTHES", o.x + o.w / 2, o.y + o.h + 14, "#f1d9ff", 10);
+}
+
+function drawBed(o) {
+  rect(o.x + 6, o.y + 9, o.w, o.h, "#211a2b");
+  rect(o.x, o.y, o.w, o.h, "#60405d");
+  rect(o.x + 8, o.y + 8, o.w - 16, o.h - 16, "#8a5d81");
+
+  rect(o.x + 10, o.y + 10, o.w - 20, 28, "#bd8e79");
+  rect(o.x + 15, o.y + 15, o.w - 30, 5, "#e2b7a1");
+
+  rect(o.x + 15, o.y + 44, o.w - 30, o.h - 60, "#e2d8ef");
+  rect(o.x + 20, o.y + 49, o.w - 40, o.h - 70, "#c5b8df");
+
+  rect(o.x + 24, o.y + 49, 64, 36, "#f6e9ff");
+  rect(o.x + 122, o.y + 49, 64, 36, "#f6e9ff");
+
+  rect(o.x + 25, o.y + 95, o.w - 50, 70, "#776cc3");
+  rect(o.x + 25, o.y + 95, o.w - 50, 7, "#a59bff");
+  rect(o.x + 34, o.y + 110, 3, 40, "#9285df");
+  rect(o.x + o.w - 38, o.y + 110, 3, 40, "#9285df");
+
+  text("BED", o.x + o.w / 2, o.y + o.h + 16, "#f1d9ff", 10);
+}
+
+function drawCabinet(o) {
+  rect(o.x + 4, o.y + 7, o.w, o.h, "#211a2b");
+  rect(o.x, o.y, o.w, o.h, "#80523b");
+  rect(o.x + 7, o.y + 7, o.w - 14, o.h - 14, "#b17a53");
+
+  rect(o.x + 10, o.y + 12, o.w - 20, 48, "#6a493d");
+  rect(o.x + 10, o.y + 67, o.w - 20, 48, "#6a493d");
+  rect(o.x + 51, o.y + 30, 7, 7, "#edca8b");
+  rect(o.x + 51, o.y + 85, 7, 7, "#edca8b");
+
+  text("STORAGE", o.x + o.w / 2, o.y + o.h + 15, "#f1d9ff", 10);
+}
+
+function drawMicrophone(o) {
+  rect(o.x + 6, o.y + 10, o.w, o.h, "#211a2b");
+  rect(o.x, o.y, o.w, o.h, "#49334c");
+  rect(o.x + 8, o.y + 8, o.w - 16, o.h - 16, "#785271");
+
+  rect(o.x + 42, o.y + 20, 9, 26, "#302a3f");
+  rect(o.x + 39, o.y + 17, 15, 15, "#c4b6d9");
+  rect(o.x + 42, o.y + 20, 9, 8, "#504668");
+  rect(o.x + 45, o.y + 46, 3, 12, "#302a3f");
+  rect(o.x + 29, o.y + 57, 35, 4, "#302a3f");
+
+  text("MIC", o.x + o.w / 2, o.y + o.h + 14, "#f1d9ff", 10);
+}
+
+function drawDoor(o) {
+  rect(o.x - 4, o.y - 4, o.w + 8, o.h + 8, "#282337");
+  rect(o.x, o.y, o.w, o.h, "#70452e");
+  rect(o.x + 6, o.y + 6, o.w - 12, o.h - 8, "#a56a45");
+  rect(o.x + 12, o.y + 12, o.w - 24, o.h - 22, "#815039");
+  rect(o.x + 45, o.y + 28, 5, 5, "#f2d58e");
+
+  text("EXIT", o.x + o.w / 2, o.y - 9, "#f1d9ff", 10);
+}
+
+function drawPlayer() {
+  const x = Math.round(player.x);
+  const y = Math.round(player.y);
+  const bob = player.moving ? Math.floor(player.step) % 2 * 2 : 0;
+
+  rect(x - 10, y + 10, 20, 5, "#292037");
+
+  // Shoes.
+  rect(x - 9, y + 8 + bob, 7, 5, "#282333");
+  rect(x + 2, y + 8 + bob, 7, 5, "#282333");
+
+  // Legs.
+  rect(x - 8, y + 1 + bob, 6, 10, "#5266a2");
+  rect(x + 2, y + 1 - bob, 6, 10, "#5266a2");
+
+  // Hoodie.
+  rect(x - 11, y - 12, 22, 17, "#7c53ad");
+  rect(x - 8, y - 10, 16, 12, "#a77bd8");
+  rect(x - 2, y - 8, 4, 8, "#f2d8ff");
+
+  // Head and hair.
+  rect(x - 9, y - 25, 18, 15, "#efbd98");
+  rect(x - 10, y - 28, 20, 9, "#332638");
+  rect(x - 10, y - 24, 5, 7, "#332638");
+  rect(x + 5, y - 24, 5, 7, "#332638");
+
+  if (player.direction === "down") {
+    rect(x - 5, y - 19, 3, 3, "#342536");
+    rect(x + 3, y - 19, 3, 3, "#342536");
+  } else if (player.direction === "left") {
+    rect(x - 7, y - 20, 3, 3, "#342536");
+  } else if (player.direction === "right") {
+    rect(x + 4, y - 20, 3, 3, "#342536");
+  }
+
+  if (player.moving) {
+    rect(x - 3, y + 17, 6, 2, "#c7a5ff");
+  }
+}
+
+function drawInteractionHints() {
+  for (const o of objects) {
+    const d = distance(player, {
+      x: o.centerX,
+      y: o.centerY
+    });
+
+    if (d < 115) {
+      rect(o.centerX - 4, o.y - 17, 8, 8, "#c4a1ff");
+      rect(o.centerX - 2, o.y - 15, 4, 4, "#332345");
+    }
+  }
+}
+
+function drawScene() {
+  drawRoom();
+  drawInteractionHints();
+  drawPlayer();
+}
+
+// ---------------- GAME UPDATE ----------------
+
+function updateNearby() {
+  let closest = null;
+  let closestDistance = Infinity;
+
+  for (const o of objects) {
+    const d = distance(player, {
+      x: o.centerX,
+      y: o.centerY
+    });
+
+    if (d < closestDistance) {
+      closestDistance = d;
+      closest = o;
+    }
+  }
+
+  nearbyObject = closestDistance < 125 ? closest : null;
+
+  if (nearbyObject !== lastNearby) {
+    nearbyLabel.textContent = nearbyObject
+      ? "Nearby: " + nearbyObject.name + " — press E"
+      : "Nearby: Bedroom";
+
+    lastNearby = nearbyObject;
+  }
+}
+
+function collides(x, y, radius) {
+  const points = [
+    [x - radius, y - radius],
+    [x + radius, y - radius],
+    [x - radius, y + radius],
+    [x + radius, y + radius]
+  ];
+
+  for (const [px, py] of points) {
+    const t = tileOf(px, py);
+    if (isBlocked(t.x, t.y)) return true;
+  }
+
+  return false;
+}
+
+function movePlayer(dx, dy) {
+  const nextX = player.x + dx;
+  const nextY = player.y + dy;
+  const radius = 10;
+
+  if (!collides(nextX, player.y, radius)) player.x = nextX;
+  if (!collides(player.x, nextY, radius)) player.y = nextY;
+}
+
+function update(dt) {
+  let dx = 0;
+  let dy = 0;
+
+  if (keys.has("w") || keys.has("arrowup")) dy--;
+  if (keys.has("s") || keys.has("arrowdown")) dy++;
+  if (keys.has("a") || keys.has("arrowleft")) dx--;
+  if (keys.has("d") || keys.has("arrowright")) dx++;
+
+  if (dx || dy) {
+    player.path = [];
+    player.targetObject = null;
+    player.moving = true;
+
+    const magnitude = Math.hypot(dx, dy);
+    dx = dx / magnitude * player.speed * dt;
+    dy = dy / magnitude * player.speed * dt;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      player.direction = dx < 0 ? "left" : "right";
+    } else {
+      player.direction = dy < 0 ? "up" : "down";
+    }
+
+    movePlayer(dx, dy);
+  } else if (player.path.length) {
+    player.moving = true;
+
+    const target = player.path[0];
+    const vx = target.x - player.x;
+    const vy = target.y - player.y;
+    const d = Math.hypot(vx, vy);
+    const step = player.speed * dt;
+
+    if (Math.abs(vx) > Math.abs(vy)) {
+      player.direction = vx < 0 ? "left" : "right";
+    } else if (Math.abs(vy) > 0.1) {
+      player.direction = vy < 0 ? "up" : "down";
+    }
+
+    if (d <= step || d < 1) {
+      player.x = target.x;
+      player.y = target.y;
+      player.path.shift();
+    } else {
+      movePlayer(vx / d * step, vy / d * step);
+    }
+
+    if (!player.path.length) {
+      player.moving = false;
+
+      if (player.targetObject) {
+        const obj = player.targetObject;
+        player.targetObject = null;
+        interactWith(obj);
+      }
+    }
+  } else {
+    player.moving = false;
+  }
+
+  player.x = Math.max(28, Math.min(932, player.x));
+  player.y = Math.max(40, Math.min(608, player.y));
+
+  updateNearby();
+}
+
+// ---------------- STREAM WINDOW ----------------
+
+// Opens a second window containing only the room canvas.
+// The controller remains the only game simulation, so the
+// character and movement are shared between both views.
+function openStreamView() {
+  if (streamWindow && !streamWindow.closed) {
+    streamWindow.focus();
+    return;
+  }
+
+  streamWindow = window.open(
+    "",
+    "PixelDenStream",
+    "popup=yes,width=1280,height=853,resizable=yes"
+  );
+
+  if (!streamWindow) {
+    setMessage("Pop-up blocked. Allow pop-ups and try again.");
+    return;
+  }
+
+  streamWindow.document.open();
+  streamWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pixel Den — Stream View</title>
+<style>
+* { box-sizing:border-box; }
+html,body {
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#11101c;
+}
+body {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+canvas {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  cursor:crosshair;
+}
+</style>
+</head>
+<body>
+<canvas id="streamRoom" width="960" height="640"
+ aria-label="Pixel Den stream view"></canvas>
+<script>
+const streamCanvas = document.getElementById("streamRoom");
+
+// Send clicks back to the controller window.
+streamCanvas.addEventListener("click", event => {
+  const r = streamCanvas.getBoundingClientRect();
+  const x = (event.clientX - r.left) * 960 / r.width;
+  const y = (event.clientY - r.top) * 640 / r.height;
+
+  window.opener.postMessage({
+    pixelDen: true,
+    type: "click",
+    x, y
+  }, "*");
+});
+
+// Forward keyboard input if this window has focus.
+window.addEventListener("keydown", event => {
+  const key = event.key.toLowerCase();
+  const valid = [
+    "w","a","s","d",
+    "arrowup","arrowdown","arrowleft","arrowright","e","escape"
+  ];
+
+  if (valid.includes(key)) {
+    event.preventDefault();
+
+    window.opener.postMessage({
+      pixelDen: true,
+      type: "keydown",
+      key,
+      repeat: event.repeat
+    }, "*");
+  }
+});
+
+window.addEventListener("keyup", event => {
+  window.opener.postMessage({
+    pixelDen: true,
+    type: "keyup",
+    key: event.key.toLowerCase()
+  }, "*");
+});
+
+// Double-click the room to enter or leave fullscreen.
+streamCanvas.addEventListener("dblclick", async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (err) {
+    console.warn("Fullscreen was not available:", err);
+  }
+});
+
+window.addEventListener("blur", () => {
+  window.opener.postMessage({
+    pixelDen: true,
+    type: "clearKeys"
+  }, "*");
+});
+<\/script>
+</body>
+</html>`);
+  streamWindow.document.close();
+
+  streamCanvas = streamWindow.document.getElementById("streamRoom");
+  streamCtx = streamCanvas.getContext("2d");
+
+  streamWindow.addEventListener("beforeunload", () => {
+    streamCanvas = null;
+    streamCtx = null;
+    streamWindow = null;
+  });
+
+  streamWindow.focus();
+}
+
+// Process mouse and keyboard actions coming from the popup.
+window.addEventListener("message", event => {
+  if (event.source !== streamWindow) return;
+
+  const data = event.data;
+  if (!data || data.pixelDen !== true) return;
+
+  if (data.type === "click") {
+    const object = [...objects].reverse().find(o =>
+      data.x >= o.x &&
+      data.x <= o.x + o.w &&
+      data.y >= o.y &&
+      data.y <= o.y + o.h
+    );
+
+    if (object) {
+      walkTo(object.centerX, object.centerY, object);
+    } else {
+      walkTo(data.x, data.y);
+    }
+  }
+
+  if (data.type === "keydown") {
+    if (data.repeat) return;
+
+    if (["w","a","s","d","arrowup","arrowdown",
+         "arrowleft","arrowright"].includes(data.key)) {
+      keys.add(data.key);
+    }
+
+    if (data.key === "e") interactNearby();
+
+    if (data.key === "escape") {
+      player.path = [];
+      player.targetObject = null;
+      player.moving = false;
+      keys.clear();
+    }
+  }
+
+  if (data.type === "keyup") {
+    keys.delete(data.key);
+  }
+
+  if (data.type === "clearKeys") {
+    keys.clear();
+  }
+});
+
+document.getElementById("popout").addEventListener(
+  "click", openStreamView
+);
+
+// Clicking furniture in the controller view.
+canvas.addEventListener("click", event => {
+  const bounds = canvas.getBoundingClientRect();
+
+  const x = (event.clientX - bounds.left) *
+    canvas.width / bounds.width;
+
+  const y = (event.clientY - bounds.top) *
+    canvas.height / bounds.height;
+
+  const object = [...objects].reverse().find(o =>
+    x >= o.x && x <= o.x + o.w &&
+    y >= o.y && y <= o.y + o.h
+  );
+
+  if (object) {
+    walkTo(object.centerX, object.centerY, object);
+  } else {
+    walkTo(x, y);
+  }
+
+  canvas.focus();
+});
+
+// Keyboard movement while the controller is focused.
+window.addEventListener("keydown", event => {
+  const key = event.key.toLowerCase();
+  const controls = [
+    "w","a","s","d",
+    "arrowup","arrowdown","arrowleft","arrowright"
+  ];
+
+  if (controls.includes(key)) {
+    event.preventDefault();
+    keys.add(key);
+  }
+
+  if (key === "e" && !event.repeat) {
+    interactNearby();
+  }
+
+  if (key === "escape") {
+    player.path = [];
+    player.targetObject = null;
+    player.moving = false;
+    keys.clear();
+  }
+});
+
+window.addEventListener("keyup", event => {
+  keys.delete(event.key.toLowerCase());
+});
+
+window.addEventListener("blur", () => keys.clear());
+
+document.getElementById("interact").addEventListener(
+  "click", interactNearby
+);
+
+document.getElementById("stop").addEventListener("click", () => {
+  player.path = [];
+  player.targetObject = null;
+  player.moving = false;
+  setMessage("You stopped moving.");
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  player.x = 480;
+  player.y = 440;
+  player.path = [];
+  player.targetObject = null;
+  player.moving = false;
+  player.direction = "down";
+  setMessage("You're back at your starting position.");
+});
+
+// Render the same game state to both canvases.
+function frame(time) {
+  const dt = Math.min((time - lastTime) / 1000 || 0, 0.04);
+  lastTime = time;
+
+  update(dt);
+
+  ctx = mainCtx;
+  drawScene();
+
+  if (streamWindow && !streamWindow.closed &&
+      streamCanvas && streamCtx) {
+    ctx = streamCtx;
+    drawScene();
+  }
+
+  ctx = mainCtx;
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
