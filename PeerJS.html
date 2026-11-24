@@ -11,26 +11,26 @@
   <div class="container">
     <!-- Sidebar: Connection & Control -->
     <div class="sidebar">
-      <h2>💬 P2P Chat</h2>
+      <h2>P2P Chat</h2>
 
       <div class="connection-status offline" id="connStatus">
-        ⚫ Offline
+        Offline
       </div>
 
       <!-- Host Section -->
       <div class="section" id="hostSection">
         <h3>Host</h3>
-        <button class="btn btn-primary" onclick="hostRoom()">🚀 Create Room</button>
+        <button class="btn btn-primary" onclick="hostRoom()">Create Room</button>
         <p class="info-text">Start a new chat room and invite others to join using the code below.</p>
       </div>
 
       <!-- Active Host Section -->
       <div class="section hidden" id="activeHostSection">
         <h3>Your Room Code</h3>
-        <div class="room-code" id="roomCode">…</div>
-        <button class="copy-btn" onclick="copyRoomCode()">📋 Copy Code</button>
+        <div class="room-code" id="roomCode">...</div>
+        <button class="copy-btn" onclick="copyRoomCode()">Copy Code</button>
         <p class="info-text">Share this code with others so they can join your chat room.</p>
-        <button class="btn btn-danger" style="margin-top: 12px;" onclick="leaveRoom()">🚪 Leave</button>
+        <button class="btn btn-danger" style="margin-top: 12px;" onclick="leaveRoom()">Leave</button>
       </div>
 
       <!-- Join Section -->
@@ -44,7 +44,7 @@
             maxlength="5"
             onkeypress="if(event.key === 'Enter') joinRoom()"
           >
-          <button onclick="joinRoom()">↗️</button>
+          <button onclick="joinRoom()">Join</button>
         </div>
         <p class="info-text">Ask someone for their room code and paste it above to join their chat.</p>
       </div>
@@ -53,7 +53,7 @@
       <div class="section hidden" id="activeJoinSection">
         <h3>Connected</h3>
         <p class="info-text">You are connected to a peer. You can now chat!</p>
-        <button class="btn btn-danger" onclick="leaveRoom()">🚪 Disconnect</button>
+        <button class="btn btn-danger" onclick="leaveRoom()">Disconnect</button>
       </div>
     </div>
 
@@ -68,7 +68,7 @@
           <input 
             type="text" 
             id="messageInput" 
-            placeholder="Type your message…" 
+            placeholder="Type your message..." 
             disabled
             onkeypress="if(event.key === 'Enter') sendMessage()"
           >
@@ -123,12 +123,12 @@
       const sendBtn = document.getElementById('sendBtn');
 
       if (!chat.connected) {
-        status.textContent = chat.role === 'host' ? '⏳ Waiting…' : (chat.role === 'guest' ? '🔄 Connecting…' : '⚫ Offline');
+        status.textContent = chat.role === 'host' ? 'Waiting...' : (chat.role === 'guest' ? 'Connecting...' : 'Offline');
         status.className = 'connection-status ' + (chat.role ? 'waiting' : 'offline');
         messageInput.disabled = true;
         sendBtn.disabled = true;
       } else {
-        status.textContent = '🟢 Connected';
+        status.textContent = 'Connected';
         status.className = 'connection-status connected';
         messageInput.disabled = false;
         sendBtn.disabled = false;
