@@ -3,101 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2P Chat Room</title>
-  <!-- PeerJS: free WebRTC helper for peer-to-peer communication (no server needed) -->
+  <title>P2P Group Chat</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Segoe UI', sans-serif; }
+    body { display: flex; background: #f0f2f5; }
+    .container { display: flex; width: 100%; height: 100vh; }
+    .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+    .sidebar h2 { margin-bottom: 20px; color: #333; }
+    .status { padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+    .status.offline { background: #ffebee; color: #c62828; }
+    .status.waiting { background: #fff3e0; color: #e65100; }
+    .status.connected { background: #e8f5e9; color: #2e7d32; }
+    .section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+    .section:last-child { border-bottom: none; }
+    .section h3 { font-size: 0.9rem; margin-bottom: 10px; color: #666; text-transform: uppercase; }
+    input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; margin-bottom: 8px; }
+    button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 8px; }
+    button:hover { background: #0056b3; }
+    button.danger { background: #dc3545; }
+    button.danger:hover { background: #a02830; }
+    .code-box { background: #f5f5f5; padding: 12px; border-radius: 4px; text-align: center; font-family: monospace; font-size: 1.3rem; margin-bottom: 8px; }
+    .pending-list { max-height: 200px; overflow-y: auto; margin-bottom: 10px; }
+    .pending-item { background: #f9f9f9; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .pending-item button { width: auto; margin: 0 4px; padding: 4px 8px; font-size: 0.85rem; }
+    .users-list { max-height: 200px; overflow-y: auto; }
+    .user-item { padding: 8px; background: #f9f9f9; margin-bottom: 4px; border-radius: 4px; font-size: 0.9rem; }
+    .chat-area { flex: 1; display: flex; flex-direction: column; background: white; }
+    .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .message { display: flex; flex-direction: column; max-width: 60%; }
+    .message.own { align-self: flex-end; }
+    .message.other { align-self: flex-start; }
+    .msg-bubble { padding: 12px 16px; border-radius: 12px; word-wrap: break-word; }
+    .message.own .msg-bubble { background: #007bff; color: white; border-bottom-right-radius: 4px; }
+    .message.other .msg-bubble { background: #e9ecef; color: #333; border-bottom-left-radius: 4px; }
+    .msg-sender { font-size: 0.8rem; margin-bottom: 4px; font-weight: bold; opacity: 0.8; }
+    .msg-time { font-size: 0.75rem; margin-top: 4px; opacity: 0.7; }
+    .input-area { border-top: 1px solid #ddd; padding: 16px; display: flex; gap: 8px; background: white; }
+    .input-area input { margin: 0; flex: 1; }
+    .input-area button { width: 60px; margin: 0; }
+    .hidden { display: none !important; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; }
+    .modal-content h2 { margin-bottom: 20px; }
+    .modal-content p { margin-bottom: 15px; color: #666; }
+  </style>
 </head>
 <body>
-  <div>
-    <!-- Sidebar: Connection & Control -->
-    <div>
-      <h2>P2P Chat</h2>
+  <div class="modal" id="nicknameModal">
+    <div class="modal-content">
+      <h2>Enter Your Nickname</h2>
+      <p>Choose a nickname to join the chat</p>
+      <input type="text" id="nicknameInput" placeholder="Your nickname" maxlength="20">
+      <button onclick="confirmNickname()">Join</button>
+    </div>
+  </div>
 
-      <div id="connStatus">
-        Offline
-      </div>
+  <div class="container">
+    <div class="sidebar">
+      <h2>Group Chat</h2>
+      <div class="status offline" id="connStatus">Offline</div>
 
-      <!-- Host Section -->
-      <div id="hostSection">
+      <div class="section" id="hostSection">
         <h3>Host</h3>
-        <button onclick="hostRoom()">Create Room</button>
-        <p>Start a new chat room and invite others to join using the code below.</p>
+        <button onclick="showNicknameModal('host')">Create Room</button>
+        <p style="font-size: 0.9rem; color: #666;">Start a new group chat</p>
       </div>
 
-      <!-- Active Host Section -->
-      <div id="activeHostSection">
+      <div class="section hidden" id="activeHostSection">
         <h3>Your Room Code</h3>
-        <div id="roomCode">...</div>
+        <div class="code-box" id="roomCode">...</div>
         <button onclick="copyRoomCode()">Copy Code</button>
-        <p>Share this code with others so they can join your chat room.</p>
-        <button onclick="leaveRoom()">Leave</button>
+        <h3 style="margin-top: 15px;">Join Requests</h3>
+        <div class="pending-list" id="pendingList"></div>
+        <h3>Connected Users</h3>
+        <div class="users-list" id="usersList"></div>
+        <button class="danger" onclick="leaveRoom()">Leave Room</button>
       </div>
 
-      <!-- Join Section -->
-      <div id="joinSection">
+      <div class="section" id="joinSection">
         <h3>Join</h3>
-        <div>
-          <input 
-            type="text" 
-            id="joinInput" 
-            placeholder="Enter 5-char code" 
-            maxlength="5"
-            onkeypress="if(event.key === 'Enter') joinRoom()"
-          >
-          <button onclick="joinRoom()">Join</button>
-        </div>
-        <p>Ask someone for their room code and paste it above to join their chat.</p>
+        <input type="text" id="joinInput" placeholder="Enter 5-char code" maxlength="5" onkeypress="if(event.key === 'Enter') showNicknameModal('guest')">
+        <button onclick="showNicknameModal('guest')">Join Room</button>
+        <p style="font-size: 0.9rem; color: #666;">Ask host for the room code</p>
       </div>
 
-      <!-- Active Join Section -->
-      <div id="activeJoinSection">
-        <h3>Connected</h3>
-        <p>You are connected to a peer. You can now chat!</p>
-        <button onclick="leaveRoom()">Disconnect</button>
+      <div class="section hidden" id="activeGuestSection">
+        <h3>Your Nickname</h3>
+        <div style="padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 10px;" id="myNickname">...</div>
+        <h3>Connected Users</h3>
+        <div class="users-list" id="guestUsersList"></div>
+        <button class="danger" onclick="leaveRoom()">Leave Room</button>
       </div>
     </div>
 
-    <!-- Chat Area -->
-    <div>
-      <div id="messagesContainer">
-        <div>Select "Create Room" or enter a code to start chatting</div>
+    <div class="chat-area">
+      <div class="messages" id="messagesContainer">
+        <div style="text-align: center; color: #999; padding: 20px;">Select Create Room or Join Room to start</div>
       </div>
-
-      <div id="inputArea">
-        <div>
-          <input 
-            type="text" 
-            id="messageInput" 
-            placeholder="Type your message..." 
-            disabled
-            onkeypress="if(event.key === 'Enter') sendMessage()"
-          >
-          <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
-        </div>
+      <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type a message..." disabled>
+        <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
       </div>
     </div>
   </div>
 
-  <script>
-    // ========================================================================
-    // CONFIGURATION & STATE
-    // ========================================================================
-
+<script>
     const CHAT_PREFIX = 'p2p-chat-';
     const CHAT_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-    let chat = {
+    let app = {
       peer: null,
-      conn: null,
-      role: null,              // 'host' or 'guest'
+      connections: {},
+      role: null,
       code: '',
-      connected: false,
-      messages: []
+      nickname: '',
+      connectedUsers: new Set(),
+      pendingRequests: {},
+      isConnected: false
     };
 
-    // ========================================================================
-    // UTILITY: ROOM CODE GENERATION
-    // ========================================================================
+    function showNicknameModal(role) {
+      const modal = document.getElementById('nicknameModal');
+      const input = document.getElementById('nicknameInput');
+      window.pendingRole = role;
+      window.pendingCode = role === 'guest' ? document.getElementById('joinInput').value.toUpperCase().replace(/[^A-Z0-9]/g, '') : null;
+      modal.classList.add('show');
+      input.value = '';
+      input.focus();
+    }
+
+    function confirmNickname() {
+      const nickname = document.getElementById('nicknameInput').value.trim();
+      if (!nickname) {
+        alert('Please enter a nickname');
+        return;
+      }
+      if (nickname.length > 20) {
+        alert('Nickname must be 20 characters or less');
+        return;
+      }
+      
+      document.getElementById('nicknameModal').classList.remove('show');
+      app.nickname = nickname;
+      
+      if (window.pendingRole === 'host') {
+        hostRoom();
+      } else if (window.pendingRole === 'guest') {
+        if (!window.pendingCode || window.pendingCode.length !== 5) {
+          alert('Invalid room code. Must be 5 characters.');
+          return;
+        }
+        joinRoom(window.pendingCode);
+      }
+    }
 
     function makeRoomCode() {
       const bytes = new Uint8Array(5);
@@ -106,319 +167,299 @@
     }
 
     function formatTime(date) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
-
-    // ========================================================================
-    // UI: STATUS & VISIBILITY
-    // ========================================================================
 
     function updateStatus() {
       const status = document.getElementById('connStatus');
       const hostSection = document.getElementById('hostSection');
       const activeHostSection = document.getElementById('activeHostSection');
       const joinSection = document.getElementById('joinSection');
-      const activeJoinSection = document.getElementById('activeJoinSection');
-      const messageInput = document.getElementById('messageInput');
+      const activeGuestSection = document.getElementById('activeGuestSection');
+      const msgInput = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
 
-      if (!chat.connected) {
-        status.textContent = chat.role === 'host' ? 'Waiting...' : (chat.role === 'guest' ? 'Connecting...' : 'Offline');
-        messageInput.disabled = true;
+      if (app.isConnected) {
+        status.textContent = 'Connected as: ' + app.nickname;
+        status.className = 'status connected';
+        msgInput.disabled = false;
+        sendBtn.disabled = false;
+      } else if (app.role) {
+        status.textContent = 'Connecting...';
+        status.className = 'status waiting';
+        msgInput.disabled = true;
         sendBtn.disabled = true;
       } else {
-        status.textContent = 'Connected';
-        messageInput.disabled = false;
-        sendBtn.disabled = false;
+        status.textContent = 'Offline';
+        status.className = 'status offline';
+        msgInput.disabled = true;
+        sendBtn.disabled = true;
       }
 
-      // Show/hide sections
-      hostSection.style.display = chat.role !== null ? 'none' : 'block';
-      activeHostSection.style.display = chat.role === 'host' ? 'block' : 'none';
-      joinSection.style.display = chat.role !== null ? 'none' : 'block';
-      activeJoinSection.style.display = chat.role === 'guest' ? 'block' : 'none';
+      hostSection.style.display = app.role === null ? 'block' : 'none';
+      activeHostSection.style.display = app.role === 'host' ? 'block' : 'none';
+      joinSection.style.display = app.role === null ? 'block' : 'none';
+      activeGuestSection.style.display = app.role === 'guest' ? 'block' : 'none';
 
-      // Update room code display
-      const roomCodeEl = document.getElementById('roomCode');
-      if (roomCodeEl && chat.code) {
-        roomCodeEl.textContent = chat.code;
+      if (app.role === 'host') {
+        document.getElementById('roomCode').textContent = app.code;
+      }
+      if (app.role === 'guest') {
+        document.getElementById('myNickname').textContent = app.nickname;
       }
     }
 
     function copyRoomCode() {
-      if (!chat.code) return;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(chat.code).then(
-          () => alert('Room code copied: ' + chat.code),
-          () => alert('Could not copy. Room code: ' + chat.code)
-        );
-      } else {
-        alert('Room code: ' + chat.code);
+      if (!app.code) return;
+      navigator.clipboard.writeText(app.code).then(() => alert('Code copied: ' + app.code));
+    }
+
+    function updateUsersList() {
+      if (app.role === 'host') {
+        const list = document.getElementById('usersList');
+        list.innerHTML = Array.from(app.connectedUsers).map(nick => '<div class="user-item">' + nick + '</div>').join('');
+      } else if (app.role === 'guest') {
+        const list = document.getElementById('guestUsersList');
+        list.innerHTML = Array.from(app.connectedUsers).map(nick => '<div class="user-item">' + nick + '</div>').join('');
       }
     }
 
-    // ========================================================================
-    // MESSAGING: SEND & DISPLAY
-    // ========================================================================
+    function updatePendingRequests() {
+      if (app.role !== 'host') return;
+      const list = document.getElementById('pendingList');
+      const items = Object.entries(app.pendingRequests).map(([connId, nick]) => 
+        '<div class="pending-item"><span>' + nick + '</span><div><button onclick="approvePending(\'' + connId + '\')">Accept</button><button onclick="rejectPending(\'' + connId + '\')" class="danger">Reject</button></div></div>'
+      ).join('');
+      list.innerHTML = items || '<div style="text-align: center; color: #999;">No pending requests</div>';
+    }
+
+    function hostRoom() {
+      if (typeof Peer === 'undefined') {
+        alert('PeerJS library failed to load');
+        return;
+      }
+      teardown();
+      app.role = 'host';
+      app.code = makeRoomCode();
+      updateStatus();
+
+      const peerId = CHAT_PREFIX + app.code;
+      const peer = new Peer(peerId);
+      app.peer = peer;
+
+      peer.on('connection', conn => {
+        if (app.peer !== peer) return;
+        handleIncomingConnection(conn);
+      });
+
+      peer.on('error', err => console.error('Host error:', err));
+    }
+
+    function handleIncomingConnection(conn) {
+      const tempId = 'pending-' + Date.now();
+      let guestNickname = '';
+
+      conn.on('open', () => {
+        if (app.peer === null) return;
+      });
+
+      conn.on('data', data => {
+        if (app.peer === null) return;
+        if (data.type === 'join-request') {
+          guestNickname = data.nickname || 'Guest';
+          app.pendingRequests[tempId] = guestNickname;
+          app.connections[tempId] = conn;
+          updatePendingRequests();
+        } else if (data.type === 'approved') {
+          app.connectedUsers.add(guestNickname);
+          app.connections[guestNickname] = conn;
+          delete app.connections[tempId];
+          updateUsersList();
+          broadcastMessage({ type: 'user-joined', nickname: guestNickname });
+        } else if (data.type === 'message') {
+          broadcastMessage({ type: 'message', from: guestNickname, text: data.text, time: data.time });
+        }
+      });
+
+      conn.on('close', () => {
+        if (guestNickname) {
+          app.connectedUsers.delete(guestNickname);
+          delete app.connections[guestNickname];
+          updateUsersList();
+          broadcastMessage({ type: 'user-left', nickname: guestNickname });
+        }
+        delete app.pendingRequests[tempId];
+        delete app.connections[tempId];
+        updatePendingRequests();
+      });
+    }
+
+    function approvePending(connId) {
+      const nickname = app.pendingRequests[connId];
+      if (!nickname) return;
+      
+      delete app.pendingRequests[connId];
+      app.connectedUsers.add(nickname);
+      
+      const conn = app.connections[connId];
+      if (conn) {
+        conn.send({ type: 'approved' });
+        app.connections[nickname] = conn;
+        delete app.connections[connId];
+        updateUsersList();
+        broadcastMessage({ type: 'user-joined', nickname });
+      }
+      updatePendingRequests();
+    }
+
+    function rejectPending(connId) {
+      const conn = app.connections[connId];
+      if (conn) conn.close();
+      delete app.pendingRequests[connId];
+      delete app.connections[connId];
+      updatePendingRequests();
+    }
+
+    function broadcastMessage(msg) {
+      for (let nick in app.connections) {
+        try {
+          app.connections[nick].send(msg);
+        } catch (err) {
+          console.error('Failed to send to', nick, ':', err);
+        }
+      }
+    }
+
+    function joinRoom(code) {
+      if (typeof Peer === 'undefined') {
+        alert('PeerJS library failed to load');
+        return;
+      }
+      teardown();
+      app.role = 'guest';
+      app.code = code;
+      updateStatus();
+
+      const peer = new Peer();
+      app.peer = peer;
+
+      peer.on('open', () => {
+        if (app.peer !== peer) return;
+        const targetId = CHAT_PREFIX + code;
+        const conn = peer.connect(targetId, { reliable: true });
+        handleGuestConnection(conn);
+      });
+
+      peer.on('error', err => {
+        console.error('Guest error:', err);
+        leaveRoom();
+      });
+    }
+
+    function handleGuestConnection(conn) {
+      app.connections['host'] = conn;
+
+      conn.on('open', () => {
+        if (app.peer === null) return;
+        conn.send({ type: 'join-request', nickname: app.nickname });
+        document.getElementById('messagesContainer').innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Waiting for host to approve...</div>';
+      });
+
+      conn.on('data', data => {
+        if (app.peer === null) return;
+        if (data.type === 'approved') {
+          app.isConnected = true;
+          app.connectedUsers.add(app.nickname);
+          updateStatus();
+          document.getElementById('messagesContainer').innerHTML = '';
+        } else if (data.type === 'user-joined') {
+          app.connectedUsers.add(data.nickname);
+          updateUsersList();
+        } else if (data.type === 'user-left') {
+          app.connectedUsers.delete(data.nickname);
+          updateUsersList();
+        } else if (data.type === 'message') {
+          displayMessage(data.text, data.from, new Date(data.time));
+        }
+      });
+
+      conn.on('close', () => {
+        leaveRoom();
+      });
+    }
 
     function sendMessage() {
       const input = document.getElementById('messageInput');
       const text = input.value.trim();
-      if (!text || !chat.connected) return;
+      if (!text || !app.isConnected) return;
 
-      const now = new Date();
-      const message = {
-        type: 'message',
-        text: text,
-        timestamp: now.toISOString()
-      };
+      const time = new Date().toISOString();
+      displayMessage(text, app.nickname, new Date(time));
 
-      // Send to peer
-      try {
-        chat.conn.send(message);
-      } catch (err) {
-        console.error('Failed to send message:', err);
-        return;
+      if (app.role === 'host') {
+        broadcastMessage({ type: 'message', from: app.nickname, text, time });
+      } else {
+        app.connections['host'].send({ type: 'message', text, time });
       }
 
-      // Display locally
-      displayMessage(text, 'own', now);
       input.value = '';
       input.focus();
     }
 
     function displayMessage(text, sender, date) {
       const container = document.getElementById('messagesContainer');
-
-      // Clear empty state
-      if (container.children.length === 1 && container.children[0].classList.contains('empty-state')) {
+      if (container.children.length === 1 && container.children[0].style.textAlign) {
         container.innerHTML = '';
       }
 
-      const messageDiv = document.createElement('div');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message ' + (sender === app.nickname ? 'own' : 'other');
+
+      const senderDiv = document.createElement('div');
+      senderDiv.className = 'msg-sender';
+      senderDiv.textContent = sender;
 
       const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
       bubble.textContent = text;
 
-      const time = document.createElement('div');
-      time.textContent = formatTime(date);
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'msg-time';
+      timeDiv.textContent = formatTime(date);
 
-      messageDiv.appendChild(bubble);
-      messageDiv.appendChild(time);
-      container.appendChild(messageDiv);
-
-      // Auto-scroll to bottom
+      msgDiv.appendChild(senderDiv);
+      msgDiv.appendChild(bubble);
+      msgDiv.appendChild(timeDiv);
+      container.appendChild(msgDiv);
       container.scrollTop = container.scrollHeight;
     }
 
-    // ========================================================================
-    // CONNECTION: HOST
-    // ========================================================================
-
-    function hostRoom() {
-      if (typeof Peer === 'undefined') {
-        alert('PeerJS library failed to load. Check your internet connection and reload.');
-        return;
-      }
-
-      teardown();
-      startHost();
-    }
-
-    function startHost() {
-      const code = makeRoomCode();
-      chat.role = 'host';
-      chat.code = code;
-      updateStatus();
-
-      const peerId = CHAT_PREFIX + code;
-      const peer = new Peer(peerId);
-      chat.peer = peer;
-
-      peer.on('open', () => {
-        if (chat.peer !== peer) return;
-        console.log('Host peer open with ID:', peerId);
-      });
-
-      peer.on('connection', conn => {
-        if (chat.peer !== peer) return;
-        if (chat.conn) {
-          conn.on('open', () => conn.close());
-          return;
-        }
-        attachConnection(conn);
-      });
-
-      peer.on('disconnected', () => {
-        if (chat.peer === peer && !peer.destroyed) {
-          try {
-            peer.reconnect();
-          } catch (err) {
-            console.error('Reconnection failed:', err);
-          }
-        }
-      });
-
-      peer.on('error', err => handleError(err, peer));
-    }
-
-    // ========================================================================
-    // CONNECTION: GUEST (JOIN)
-    // ========================================================================
-
-    function joinRoom() {
-      if (typeof Peer === 'undefined') {
-        alert('PeerJS library failed to load. Check your internet connection and reload.');
-        return;
-      }
-
-      const code = document.getElementById('joinInput').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      if (code.length !== 5) {
-        alert('Please enter a valid 5-character room code.');
-        return;
-      }
-
-      teardown();
-      chat.role = 'guest';
-      chat.code = code;
-      updateStatus();
-
-      const peer = new Peer();
-      chat.peer = peer;
-
-      peer.on('open', () => {
-        if (chat.peer !== peer) return;
-        const targetId = CHAT_PREFIX + code;
-        const conn = peer.connect(targetId, { reliable: true });
-        attachConnection(conn);
-      });
-
-      peer.on('error', err => handleError(err, peer));
-    }
-
-    // ========================================================================
-    // CONNECTION: ATTACH & DATA HANDLING
-    // ========================================================================
-
-    function attachConnection(conn) {
-      chat.conn = conn;
-
-      conn.on('open', () => {
-        if (chat.conn !== conn) return;
-        chat.connected = true;
-        updateStatus();
-        
-        const container = document.getElementById('messagesContainer');
-        container.innerHTML = '<div>Connected! Start chatting</div>';
-        
-        console.log('Connection established');
-      });
-
-      conn.on('data', data => {
-        if (chat.conn !== conn) return;
-        handleIncomingMessage(data);
-      });
-
-      conn.on('close', () => {
-        if (chat.conn !== conn) return;
-        leaveRoom();
-      });
-
-      conn.on('error', () => {
-        if (chat.conn !== conn) return;
-        alert('Connection error. Please try again.');
-        leaveRoom();
-      });
-    }
-
-    function handleIncomingMessage(data) {
-      if (!data || typeof data !== 'object') return;
-
-      if (data.type === 'message') {
-        const text = typeof data.text === 'string' ? data.text.slice(0, 2000) : '';
-        const date = data.timestamp ? new Date(data.timestamp) : new Date();
-        if (text) {
-          displayMessage(text, 'other', date);
-        }
-      }
-    }
-
-    // ========================================================================
-    // DISCONNECTION
-    // ========================================================================
-
     function leaveRoom() {
       teardown();
-      document.getElementById('messagesContainer').innerHTML = 
-        '<div>Select "Create Room" or enter a code to start chatting</div>';
+      document.getElementById('messagesContainer').innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Select Create Room or Join Room to start</div>';
       document.getElementById('joinInput').value = '';
       updateStatus();
     }
 
     function teardown() {
-      const oldConn = chat.conn;
-      const oldPeer = chat.peer;
+      for (let nick in app.connections) {
+        try { app.connections[nick].close(); } catch (err) {}
+      }
+      try { if (app.peer) app.peer.destroy(); } catch (err) {}
       
-      chat = {
+      app = {
         peer: null,
-        conn: null,
+        connections: {},
         role: null,
         code: '',
-        connected: false,
-        messages: []
+        nickname: '',
+        connectedUsers: new Set(),
+        pendingRequests: {},
+        isConnected: false
       };
-
-      try {
-        if (oldConn) oldConn.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-
-      try {
-        if (oldPeer) oldPeer.destroy();
-      } catch (err) {
-        console.error('Error destroying peer:', err);
-      }
     }
-
-    // ========================================================================
-    // ERROR HANDLING
-    // ========================================================================
-
-    function handleError(err, peer) {
-      let message = '';
-      
-      if (err.type === 'peer-unavailable') {
-        message = 'No room found with that code. Check it and try again.';
-      } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed') {
-        message = 'Network error. Check your internet connection and try again.';
-      } else if (err.type === 'webrtc') {
-        message = 'WebRTC connection failed. Your network may be blocking peer-to-peer traffic.';
-      } else {
-        message = 'Connection error (' + (err.type || 'unknown') + '). Try again.';
-      }
-
-      if (!chat.connected) {
-        alert(message);
-        teardown();
-        updateStatus();
-      } else {
-        console.error('Connection error (ongoing):', message);
-      }
-    }
-
-    // ========================================================================
-    // INITIALIZATION
-    // ========================================================================
 
     updateStatus();
-
-    // Auto-focus message input when connected
-    setInterval(() => {
-      if (chat.connected && document.activeElement !== document.getElementById('messageInput')) {
-        // Message input becomes enabled when connected
-      }
-    }, 100);
   </script>
 </body>
 </html>
