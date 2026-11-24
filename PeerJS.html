@@ -8,35 +8,35 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <div class="container">
+  <div>
     <!-- Sidebar: Connection & Control -->
-    <div class="sidebar">
+    <div>
       <h2>P2P Chat</h2>
 
-      <div class="connection-status offline" id="connStatus">
+      <div id="connStatus">
         Offline
       </div>
 
       <!-- Host Section -->
-      <div class="section" id="hostSection">
+      <div id="hostSection">
         <h3>Host</h3>
-        <button class="btn btn-primary" onclick="hostRoom()">Create Room</button>
-        <p class="info-text">Start a new chat room and invite others to join using the code below.</p>
+        <button onclick="hostRoom()">Create Room</button>
+        <p>Start a new chat room and invite others to join using the code below.</p>
       </div>
 
       <!-- Active Host Section -->
-      <div class="section hidden" id="activeHostSection">
+      <div id="activeHostSection">
         <h3>Your Room Code</h3>
-        <div class="room-code" id="roomCode">...</div>
-        <button class="copy-btn" onclick="copyRoomCode()">Copy Code</button>
-        <p class="info-text">Share this code with others so they can join your chat room.</p>
-        <button class="btn btn-danger" style="margin-top: 12px;" onclick="leaveRoom()">Leave</button>
+        <div id="roomCode">...</div>
+        <button onclick="copyRoomCode()">Copy Code</button>
+        <p>Share this code with others so they can join your chat room.</p>
+        <button onclick="leaveRoom()">Leave</button>
       </div>
 
       <!-- Join Section -->
-      <div class="section" id="joinSection">
+      <div id="joinSection">
         <h3>Join</h3>
-        <div class="input-group">
+        <div>
           <input 
             type="text" 
             id="joinInput" 
@@ -46,25 +46,25 @@
           >
           <button onclick="joinRoom()">Join</button>
         </div>
-        <p class="info-text">Ask someone for their room code and paste it above to join their chat.</p>
+        <p>Ask someone for their room code and paste it above to join their chat.</p>
       </div>
 
       <!-- Active Join Section -->
-      <div class="section hidden" id="activeJoinSection">
+      <div id="activeJoinSection">
         <h3>Connected</h3>
-        <p class="info-text">You are connected to a peer. You can now chat!</p>
-        <button class="btn btn-danger" onclick="leaveRoom()">Disconnect</button>
+        <p>You are connected to a peer. You can now chat!</p>
+        <button onclick="leaveRoom()">Disconnect</button>
       </div>
     </div>
 
     <!-- Chat Area -->
-    <div class="chat-area">
-      <div class="messages-container" id="messagesContainer">
-        <div class="empty-state">Select "Create Room" or enter a code to start chatting</div>
+    <div>
+      <div id="messagesContainer">
+        <div>Select "Create Room" or enter a code to start chatting</div>
       </div>
 
-      <div class="message-input-area" id="inputArea">
-        <div class="message-input-wrapper">
+      <div id="inputArea">
+        <div>
           <input 
             type="text" 
             id="messageInput" 
@@ -124,21 +124,19 @@
 
       if (!chat.connected) {
         status.textContent = chat.role === 'host' ? 'Waiting...' : (chat.role === 'guest' ? 'Connecting...' : 'Offline');
-        status.className = 'connection-status ' + (chat.role ? 'waiting' : 'offline');
         messageInput.disabled = true;
         sendBtn.disabled = true;
       } else {
         status.textContent = 'Connected';
-        status.className = 'connection-status connected';
         messageInput.disabled = false;
         sendBtn.disabled = false;
       }
 
       // Show/hide sections
-      hostSection.classList.toggle('hidden', chat.role !== null);
-      activeHostSection.classList.toggle('hidden', chat.role !== 'host');
-      joinSection.classList.toggle('hidden', chat.role !== null);
-      activeJoinSection.classList.toggle('hidden', chat.role !== 'guest');
+      hostSection.style.display = chat.role !== null ? 'none' : 'block';
+      activeHostSection.style.display = chat.role === 'host' ? 'block' : 'none';
+      joinSection.style.display = chat.role !== null ? 'none' : 'block';
+      activeJoinSection.style.display = chat.role === 'guest' ? 'block' : 'none';
 
       // Update room code display
       const roomCodeEl = document.getElementById('roomCode');
@@ -198,14 +196,11 @@
       }
 
       const messageDiv = document.createElement('div');
-      messageDiv.className = 'message ' + sender;
 
       const bubble = document.createElement('div');
-      bubble.className = 'message-bubble';
       bubble.textContent = text;
 
       const time = document.createElement('div');
-      time.className = 'message-time';
       time.textContent = formatTime(date);
 
       messageDiv.appendChild(bubble);
@@ -314,7 +309,7 @@
         updateStatus();
         
         const container = document.getElementById('messagesContainer');
-        container.innerHTML = '<div class="empty-state">Connected! Start chatting</div>';
+        container.innerHTML = '<div>Connected! Start chatting</div>';
         
         console.log('Connection established');
       });
@@ -355,7 +350,7 @@
     function leaveRoom() {
       teardown();
       document.getElementById('messagesContainer').innerHTML = 
-        '<div class="empty-state">Select "Create Room" or enter a code to start chatting</div>';
+        '<div>Select "Create Room" or enter a code to start chatting</div>';
       document.getElementById('joinInput').value = '';
       updateStatus();
     }
