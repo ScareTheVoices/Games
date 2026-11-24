@@ -19,7 +19,7 @@
   </div>
 
   <div>
-    <input id="joinCode" maxlength="5" placeholder="CODE">
+    <input id="joinCode" maxlength="5" placeholder="CODE" onkeydown="if(event.key==='Enter') joinRoom()">
     <button onclick="joinRoom()">Join</button>
     <button onclick="disconnectAll()">Disconnect</button>
   </div>
@@ -44,7 +44,7 @@
     let peer = null;
     let role = null;        // 'host' | 'guest'
     let myName = '';
-    let connections = [];   // Host: [{ conn, name }] | Guest: [{ conn, name: 'Host' }]
+    let connections = [];   // Host: [{ conn, name }] | Guest: [{ conn, name }]
 
     function generateCode() {
       const bytes = new Uint8Array(5);
@@ -64,7 +64,7 @@
     function appendLine(text) {
       const log = document.getElementById('chatLog');
       const p = document.createElement('p');
-      p.textContent = text; // textContent safely prevents HTML injection
+      p.textContent = text;
       log.appendChild(p);
       log.scrollTop = log.scrollHeight;
     }
@@ -103,7 +103,7 @@
       peer.on('error', err => setStatus('Error: ' + err.type));
     }
 
-    // 2. JOIN A ROOM
+    // 2. JOIN A ROOM (Sends nickname inside handshake metadata)
     function joinRoom() {
       const code = document.getElementById('joinCode').value.trim().toUpperCase();
       if (code.length !== 5) return setStatus('Enter a 5-character code.');
@@ -116,7 +116,10 @@
       peer = new Peer();
 
       peer.on('open', () => {
-        const conn = peer.connect(APP_PREFIX + code, { reliable: true });
+        const conn = peer.connect(APP_PREFIX + code, {
+          reliable: true,
+          metadata: { name: myName }
+        });
         setupConnection(conn);
       });
 
@@ -125,23 +128,17 @@
 
     // 3. MANAGE DATA CHANNEL
     function setupConnection(conn) {
-      const entry = { conn, name: 'Guest' };
+      const incomingName = (conn.metadata && conn.metadata.name)
+        ? String(conn.metadata.name).slice(0, 20)
+        : 'Guest';
+      const entry = { conn, name: incomingName };
 
-      conn.on('open', () => {
+      const handleOpen = () => {
+        if (connections.some(c => c.conn === conn)) return;
         connections.push(entry);
         setStatus('Connected');
-        // Guest introduces themselves with their nickname upon connecting
-        if (role === 'guest') {
-          conn.send({ type: 'hello', name: myName });
-        }
-      });
 
-      conn.on('data', data => {
-        if (!data || typeof data !== 'object') return;
-
-        // Guest sent their nickname to the Host
-        if (data.type === 'hello' && role === 'host') {
-          entry.name = String(data.name || 'Guest').slice(0, 20);
+        if (role === 'host') {
           const joinNotice = `* ${entry.name} joined`;
           appendLine(joinNotice);
           broadcastRoster();
@@ -149,14 +146,19 @@
             if (c.conn !== conn && c.conn.open) c.conn.send({ type: 'sys', text: joinNotice });
           });
         }
+      };
 
-        // Chat message received
+      if (conn.open) handleOpen();
+      else conn.on('open', handleOpen);
+
+      conn.on('data', data => {
+        if (!data || typeof data !== 'object') return;
+
         if (data.type === 'chat') {
           const sender = role === 'host' ? entry.name : String(data.sender || 'Peer');
           const text = String(data.text || '').slice(0, 500);
           appendLine(`${sender}: ${text}`);
 
-          // Host relays message (with verified sender nickname) to all other guests
           if (role === 'host') {
             connections.forEach(c => {
               if (c.conn !== conn && c.conn.open) {
@@ -166,7 +168,6 @@
           }
         }
 
-        // System notice or updated nickname roster from Host
         if (data.type === 'sys') appendLine(String(data.text || ''));
         if (data.type === 'roster' && Array.isArray(data.names)) renderUserList(data.names);
       });
