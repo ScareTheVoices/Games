@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peer-to-Peer Starter</title>
+  <script src="https://unpkg.com"></script>
+</head>
+<body>
+
+  <!-- Minimal Connection Controls -->
+  <div>
+    <button onclick="hostRoom()">Host</button>
+    <span id="roomCode"></span>
+  </div>
+
+  <div>
+    <input id="joinCode" maxlength="5" placeholder="CODE">
+    <button onclick="joinRoom()">Join</button>
+    <button onclick="disconnectAll()">Disconnect</button>
+  </div>
+
+  <p id="status">Offline</p>
+
+  <!-- Your custom UI goes here -->
+
+  <script>
+    const APP_PREFIX = 'p2p-app-'; // Change this to keep your app unique on PeerJS
+    const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+    let peer = null;
+    let role = null;        // 'host' | 'guest'
+    let connections = [];   // Host: all connected guests | Guest: [hostConnection]
+
+    function generateCode() {
+      const bytes = new Uint8Array(5);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => ALPHABET[b % ALPHABET.length]).join('');
+    }
+
+    function setStatus(text) {
+      document.getElementById('status').textContent = text;
+    }
+
+    // 1. HOST A ROOM
+    function hostRoom() {
+      disconnectAll();
+      role = 'host';
+      const code = generateCode();
+      setStatus('Starting host...');
+
+      peer = new Peer(APP_PREFIX + code);
+
+      peer.on('open', () => {
+        document.getElementById('roomCode').textContent = 'Room Code: ' + code;
+        setStatus('Hosting (Waiting for peers)');
+      });
+
+      peer.on('connection', conn => {
+        setupConnection(conn);
+      });
+
+      peer.on('error', err => setStatus('Error: ' + err.type));
+    }
+
+    // 2. JOIN A ROOM
+    function joinRoom() {
+      const code = document.getElementById('joinCode').value.trim().toUpperCase();
+      if (code.length !== 5) return setStatus('Enter a 5-character code.');
+
+      disconnectAll();
+      role = 'guest';
+      setStatus('Connecting...');
+
+      peer = new Peer();
+
+      peer.on('open', () => {
+        const conn = peer.connect(APP_PREFIX + code, { reliable: true });
+        setupConnection(conn);
+      });
+
+      peer.on('error', err => setStatus('Error: ' + err.type));
+    }
+
+    // 3. MANAGE DATA CHANNEL
+    function setupConnection(conn) {
+      conn.on('open', () => {
+        connections.push(conn);
+        setStatus(`Connected (${connections.length} peer${connections.length === 1 ? '' : 's'})`);
+        onPeerConnected(conn);
+      });
+
+      conn.on('data', data => {
+        // If Host, relay incoming data to all other connected guests
+        if (role === 'host') {
+          connections.forEach(c => {
+            if (c !== conn && c.open) c.send(data);
+          });
+        }
+        onDataReceived(data, conn);
+      });
+
+      conn.on('close', () => {
+        connections = connections.filter(c => c !== conn);
+        setStatus(connections.length ? `Connected (${connections.length} peers)` : 'Disconnected');
+        onPeerDisconnected(conn);
+      });
+    }
+
+    // 4. SEND DATA TO EVERYONE
+    function sendData(payload) {
+      connections.forEach(conn => {
+        if (conn.open) conn.send(payload);
+      });
+    }
+
+    // 5. CLEANUP
+    function disconnectAll() {
+      connections.forEach(c => { try { c.close(); } catch (e) {} });
+      connections = [];
+      try { if (peer) peer.destroy(); } catch (e) {}
+      peer = null;
+      role = null;
+      document.getElementById('roomCode').textContent = '';
+      setStatus('Offline');
+    }
+
+    /* ========================================================================
+       YOUR APP HOOKS — Build your logic here
+       ======================================================================== */
+    function onPeerConnected(conn) {
+      console.log('Peer connected:', conn.peer);
+    }
+
+    function onDataReceived(data, conn) {
+      console.log('Received:', data, 'from', conn.peer);
+    }
+
+    function onPeerDisconnected(conn) {
+      console.log('Peer disconnected:', conn.peer);
+    }
+  </script>
+</body>
+</html>
